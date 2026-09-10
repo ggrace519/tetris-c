@@ -131,6 +131,12 @@ void drawHud(const ModeController& mc) {
         std::snprintf(buf, sizeof(buf), "COMBO x%d", board.combo());
         DrawText(buf, x, 340, 24, rl(kColYellow));
     }
+    // T-spin indicator for the most recent lock.
+    if (board.lastTSpin() == Board::TSpin::Full) {
+        DrawText("T-SPIN!", x, 372, 24, rl(kColPurple));
+    } else if (board.lastTSpin() == Board::TSpin::Mini) {
+        DrawText("T-SPIN MINI", x, 372, 20, rl(kColPurple));
+    }
 
     DrawText("Move  <- ->", x, 470, 16, rl(kColGray));
     DrawText("Rotate  Z / X", x, 490, 16, rl(kColGray));

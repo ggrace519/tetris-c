@@ -33,6 +33,10 @@ public:
     int linesCleared() const { return linesTotal_; }
     int combo() const { return combo_; }         // current consecutive-clear run
     int maxCombo() const { return maxCombo_; }
+
+    // T-spin classification of the LAST lock (for HUD/feedback). None until a lock.
+    enum class TSpin { None, Mini, Full };
+    TSpin lastTSpin() const { return lastTSpin_; }
     double fallSpeed() const { return fallSpeed_; }
     bool gameOver() const { return gameOver_; }
 
@@ -96,6 +100,7 @@ public:
 private:
     Piece nextFromBag();
     void refillBag();
+    TSpin detectTSpin() const;  // 3-corner rule on the current (about-to-lock) T piece
 
     Grid grid_{};
     std::vector<ShapeId> bag_;
@@ -105,6 +110,7 @@ private:
     int level_ = 1;
     int combo_ = 0;
     int maxCombo_ = 0;
+    TSpin lastTSpin_ = TSpin::None;
     double fallSpeed_ = kStartFallSpeed;
     bool gameOver_ = false;
     Piece current_{ShapeId::I};

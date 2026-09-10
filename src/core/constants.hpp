@@ -126,6 +126,12 @@ inline constexpr int kLinesPerLevel = 10;
 inline constexpr int kHardDropPerCell = 2;  // hard_drop: distance * 2
 inline constexpr int kComboBonusPerLevel = 50;  // combo bonus = combo * 50 * level
 
+// T-spin scoring (python-tetris innovation/t-spin values; × level). ADR-0006.
+inline constexpr int kTSpinMini = 100;
+inline constexpr int kTSpinSingle = 200;
+inline constexpr int kTSpinDouble = 400;
+inline constexpr int kTSpinTriple = 800;
+
 // Feel timings (settings.py on innovation/das-lock-delay + drop-animation).
 inline constexpr double kLockDelay = 0.5;   // seconds a landed piece waits before locking
 inline constexpr double kDasSeconds = 0.167;  // Delayed Auto Shift

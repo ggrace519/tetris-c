@@ -15,6 +15,7 @@ void Board::reset() {
     level_ = 1;
     combo_ = 0;
     maxCombo_ = 0;
+    lastTSpin_ = TSpin::None;
     fallSpeed_ = kStartFallSpeed;
     gameOver_ = false;
     gravityTimer_ = 0.0;
@@ -66,6 +67,10 @@ bool Board::move(int dx, int dy) {
     const int ny = current_.y() + dy;
     if (collides(current_, nx, ny, current_.rotation())) return false;
     current_.setPos(nx, ny);
+    // NOTE: spin flag is intentionally NOT cleared on translation, to match
+    // python-tetris's t-spin branch (its move_current_piece leaves spin_axis set;
+    // a fresh piece clears it on spawn). This is looser than the guideline "last
+    // maneuver must be a rotation" but is the parity target (ADR-0006).
     resetLockDelay();  // move reset
     return true;
 }
@@ -81,6 +86,7 @@ bool Board::rotate(int direction) {
         if (!collides(current_, testX, testY, newRot)) {
             current_.setRotation(newRot);
             current_.setPos(testX, testY);
+            current_.setSpin(kicks[i]);  // record the kick used (T-spin: last move = rotation)
             resetLockDelay();  // rotate reset
             return true;
         }
@@ -111,6 +117,11 @@ void Board::hardDrop() {
 }
 
 void Board::lock() {
+    // T-spin must be judged from the piece's position BEFORE it is written to the
+    // grid (its own cells must not count as blocked corners).
+    const TSpin tspin = detectTSpin();
+    lastTSpin_ = tspin;
+
     for (const Cell& c : current_.cells()) {
         if (c.y < 0) {  // locked above the top → game over (board.py lock_current_piece)
             gameOver_ = true;
@@ -132,6 +143,22 @@ void Board::lock() {
                               kStartFallSpeed - (level_ - 1) * kFallSpeedPerLevel);
     } else {
         combo_ = 0;  // a lock with no clear breaks the combo
+    }
+
+    // T-spin bonus (× level), added on top of any line score (ADR-0006).
+    if (tspin != TSpin::None) {
+        int bonus = 0;
+        if (tspin == TSpin::Mini) {
+            bonus = kTSpinMini;  // mini: fixed bonus regardless of lines here
+        } else {  // Full T-spin: bonus scales with lines cleared
+            switch (lines) {
+                case 0: bonus = kTSpinMini; break;  // spin with no lines → small bonus
+                case 1: bonus = kTSpinSingle; break;
+                case 2: bonus = kTSpinDouble; break;
+                default: bonus = kTSpinTriple; break;  // 3
+            }
+        }
+        score_ += static_cast<long>(bonus) * level_;
     }
 
     current_ = next_;
@@ -206,6 +233,32 @@ int Board::clearLines() {
     const int cleared = writeRow + 1;
     grid_ = out;
     return cleared;
+}
+
+Board::TSpin Board::detectTSpin() const {
+    // Simplified 3-corner rule (ADR-0006 / python-tetris innovation/t-spin):
+    // only a T piece whose last successful move was a rotation can be a T-spin.
+    if (current_.shape() != ShapeId::T) return TSpin::None;
+    if (!current_.hasSpin()) return TSpin::None;
+
+    // Four corners of the T's 3x3 bounding box (piece origin is its top-left).
+    const int x = current_.x();
+    const int y = current_.y();
+    const Cell corners[4] = {
+        {x, y}, {x + 2, y}, {x, y + 2}, {x + 2, y + 2}};
+
+    int blocked = 0;
+    for (const Cell& c : corners) {
+        if (c.x < 0 || c.x >= kCols || c.y >= kRows) {
+            ++blocked;  // wall/floor counts as blocked
+        } else if (c.y >= 0 && grid_[c.y][c.x].has_value()) {
+            ++blocked;  // filled cell
+        }
+    }
+
+    if (blocked >= 3) return TSpin::Full;
+    if (blocked == 2) return TSpin::Mini;  // spin_axis is non-null (hasSpin true)
+    return TSpin::None;
 }
 
 bool Board::injectGarbage(int holeCol) {

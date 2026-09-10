@@ -22,6 +22,13 @@ public:
     void setRotation(int r) { rotation_ = ((r % 4) + 4) % 4; }
     void setPos(int nx, int ny) { px_ = nx; py_ = ny; }
 
+    // Spin tracking for T-spin detection (ADR-0006). Set to the kick offset used
+    // on a successful rotation; cleared (hasSpin=false) by any translation.
+    bool hasSpin() const { return hasSpin_; }
+    Cell spinAxis() const { return spinAxis_; }
+    void setSpin(Cell axis) { spinAxis_ = axis; hasSpin_ = true; }
+    void clearSpin() { hasSpin_ = false; }
+
     // Board cells occupied at a given (x, y, rotation); defaults use current state.
     // Returns the 4 absolute cells (board coordinates).
     std::array<Cell, 4> cells() const { return cellsAt(px_, py_, rotation_); }
@@ -36,6 +43,8 @@ private:
     int rotation_ = 0;
     int px_ = kSpawnX;
     int py_ = kSpawnY;
+    bool hasSpin_ = false;
+    Cell spinAxis_{0, 0};
 };
 
 }  // namespace tetris

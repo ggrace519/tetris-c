@@ -136,3 +136,40 @@ only; the app layer is verified by running the real game.
   core tests (a standalone makefile, not a premake target — the top-level
   `Makefile` is generated and gitignored).
 - Verified: the first run passed (21 cases / 127 assertions), so this is Accepted.
+
+---
+
+## ADR-0006 — T-spin: port python-tetris's simplified 3-corner detection (no SRS)
+
+**Date:** 2026-09-10 · **Status:** Accepted (per ADR-0004: "decide then, in a new
+ADR")
+
+**Context.** ADR-0004 kept python-tetris's **simplified symmetric kick table**
+(not per-transition SRS). The guideline T-spin mini→full upgrade rule keys off
+"the rotation used the (1,2) kick — the last SRS offset", which has nothing to
+bind to under the simplified table (no per-transition structure, no (1,2)
+entry). So a guideline-faithful T-spin is not implementable without first doing
+the SRS upgrade. The decided scope is **parity with python-tetris**, whose
+`innovation/t-spin` branch shipped a working *simplified* 3-corner detector.
+
+**Decision.** Port python-tetris's **simplified 3-corner T-spin** as-is:
+- Qualifies only if the piece is a **T** and the **last successful move was a
+  rotation** (track the kick offset used as a `spinAxis`; cleared by any
+  translation/gravity move).
+- Count the four corners of the T's **3×3 bounding box** that are blocked (out of
+  bounds or filled). **≥3 blocked → T-spin; exactly 2 blocked (with a rotation)
+  → T-spin mini.**
+- Scoring uses **python-tetris's own values** (mini 100, single 200, double 400,
+  triple 800) × level — NOT the higher guideline numbers. Parity wins.
+
+This is a **degraded** T-spin (no proper mini/full front-corner distinction, no
+kick-point upgrade) but it is self-consistent and matches the parity target.
+
+**Consequences.**
+- No SRS upgrade needed for Tier 3; T-spins work on the simplified kicks.
+- If guideline-correct T-spins (proper mini/full, T-spin triple via the (1,2)
+  kick) are ever wanted, that requires the SRS upgrade from ADR-0004/TDD §9 first,
+  and would supersede this ADR. The exact SRS tables and rules are already
+  captured in `~/.claude/research/tetris-guideline.md`.
+- Back-to-back / guideline B2B multiplier is **not** part of python-tetris's
+  branch, so it is out of scope here (would arrive only with a guideline pass).

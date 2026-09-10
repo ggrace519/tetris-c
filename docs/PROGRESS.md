@@ -32,7 +32,11 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
 **Tier 2 COMPLETE** — modes, DAS/ARR+lock delay, combos, drop animation.
 
 ### Tier 3 — Polish + persistence
-- [ ] T-spin detection (`innovation/t-spin` @ 40c94f5)
+- [x] T-spin detection (`innovation/t-spin` @ 40c94f5) ✅ (see ADR-0006)
+      Core: simplified 3-corner rule on a rotated T (spinAxis tracked per Piece);
+      >=3 corners blocked = Full, 2 = Mini; bonus mini100/single200/double400/
+      triple800 * level. HUD shows T-SPIN!. +6 tests. Matches python-tetris's
+      simplified detector (not guideline SRS) per the parity scope.
 - [ ] Juice: shake/particles (`innovation/juice` @ 0cab591)
 - [ ] Heuristic AI (`innovation/ai` @ d285bb9)
 - [ ] Settings + high-score persistence; rebindable keys
