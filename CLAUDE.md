@@ -53,7 +53,16 @@ make
 
 # Build + run the headless core tests (doctest; NO raylib)
 make -f tests/tests.mk
+
+# Line-coverage report for our own src/ (gcov; NO raylib)
+make -f tests/tests.mk coverage
 ```
+
+> CI runs both on every push/PR to `develop`/`main` (`.github/workflows/ci.yml`):
+> a `test` job (`make -f tests/tests.mk` + coverage, no raylib — this is the PR
+> gate) and a `build` job (premake5 → make, which fetches and compiles raylib and
+> so installs its X11/GL/Wayland deps). There is no coverage *gate* — the report
+> is informational only.
 
 > The core tests use a standalone `tests/tests.mk`, NOT a premake target — the
 > top-level `Makefile` is premake-generated and gitignored, so a hand-added
@@ -103,6 +112,6 @@ includes a raylib header.
 - Never commit directly to `main` or `develop`; branch from `develop` first
   (`<type>/<kebab-summary>`). Branch and commit freely; **pause and ask before
   pushing or opening a PR.**
-- Remote is **not yet chosen** — GitHub (`ggrace519`) vs `git.skynet.home` (where
-  `python-tetris` lives). Decide at first push. This repo currently has **no
-  remote**.
+- Remote is **`github.com/ggrace519/tetris-c`** (public); GitHub default branch is
+  `develop`. Before any push/PR, confirm the active gh account is `ggrace519`
+  (`gh api user --jq .login`; `gh auth switch` if it's `ggrace-kurv`).

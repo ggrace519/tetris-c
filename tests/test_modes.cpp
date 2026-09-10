@@ -21,6 +21,44 @@ static void clearOneLine(ModeController& m) {
     b.lock();
 }
 
+TEST_CASE("reset clears win/timer/garbage state and reproduces the seed") {
+    ModeController m(GameMode::Sprint, Difficulty::Normal, 4242);
+    // Advance state: clear some lines (toward a win), tick the timer.
+    for (int i = 0; i < 10; ++i) clearOneLine(m);
+    m.update(2.5);
+    REQUIRE(m.won());                    // Sprint won at 10
+    REQUIRE(m.elapsed() > 0.0);
+
+    m.reset();
+    CHECK_FALSE(m.won());                 // win cleared
+    CHECK(m.elapsed() == doctest::Approx(0.0));  // timer cleared
+    CHECK(m.board().linesCleared() == 0); // board reset too
+
+    // The garbage-hole sequence is reproducible after reset (same seed → same holes).
+    ModeController a(GameMode::Ultra, Difficulty::Expert, 4242);
+    a.update(2.5);  // one injection (expert = 2s)
+    a.reset();
+    a.update(2.5);  // first injection again — same hole as a fresh run with this seed
+    ModeController fresh(GameMode::Ultra, Difficulty::Expert, 4242);
+    fresh.update(2.5);
+    int holeA = -1, holeF = -1;
+    for (int c = 0; c < kCols; ++c) {
+        if (!a.board().grid()[kRows - 1][c].has_value()) holeA = c;
+        if (!fresh.board().grid()[kRows - 1][c].has_value()) holeF = c;
+    }
+    CHECK(holeA == holeF);
+}
+
+TEST_CASE("update is a no-op after a win (won state is sticky)") {
+    ModeController m(GameMode::Sprint, Difficulty::Normal, 9);
+    for (int i = 0; i < 10; ++i) clearOneLine(m);
+    m.update(0.016);
+    REQUIRE(m.won());
+    const double tAtWin = m.elapsed();
+    m.update(5.0);  // should not advance the timer once won
+    CHECK(m.elapsed() == doctest::Approx(tAtWin));
+}
+
 TEST_CASE("mode win targets") {
     ModeController marathon(GameMode::Marathon, Difficulty::Normal, 1);
     ModeController sprint(GameMode::Sprint, Difficulty::Normal, 1);

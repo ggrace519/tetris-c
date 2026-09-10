@@ -17,7 +17,10 @@ APP_PURE := src/app/juice.cpp
 TEST_SRC := $(wildcard tests/*.cpp)
 SRC      := $(CORE_SRC) $(APP_PURE) $(TEST_SRC)
 
-.PHONY: test clean
+# Source under coverage (our code only — used to filter the gcov report).
+COV_SRC := $(CORE_SRC) $(APP_PURE)
+
+.PHONY: test coverage clean
 test: $(BIN)
 	@echo "== running core tests =="
 	@./$(BIN)
@@ -25,8 +28,28 @@ test: $(BIN)
 $(BIN): $(SRC) $(wildcard src/core/*.hpp) tests/doctest.h | $(OUTDIR)
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(BIN)
 
+# Compile with gcov instrumentation, run, and report line coverage for our
+# source files only. Object/gcov data live in $(OUTDIR) so the tree stays clean.
+# All sources compile into one binary, so gcov data files are named
+# "cov_tests-<base>.gcno"; run gcov on those prefixed files (in $(OUTDIR)) and
+# keep only the report lines for our own src/ files (not doctest/stdlib headers).
+coverage: | $(OUTDIR)
+	@echo "== building instrumented tests =="
+	@$(CXX) $(CXXFLAGS) --coverage -o $(OUTDIR)/cov_tests $(SRC)
+	@echo "== running =="
+	@cd $(OUTDIR) && ./cov_tests > /dev/null
+	@echo "== line coverage (our source only) =="
+	@cd $(OUTDIR) && gcov -r cov_tests-*.gcno 2>/dev/null \
+	  | grep -A1 -E "File 'src/(core|app)/" \
+	  | paste - - - \
+	  | sed -E "s/File '//; s/'//; s/Lines executed://; s/of [0-9]+//; s/--//g" \
+	  | awk '{printf "  %-26s %s\n", $$1, $$2}' \
+	  | sort || true
+	@rm -f $(OUTDIR)/*.gcov
+
 $(OUTDIR):
 	@mkdir -p $(OUTDIR)
 
 clean:
 	@rm -rf $(OUTDIR)
+	@rm -f *.gcov
