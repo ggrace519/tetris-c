@@ -11,24 +11,41 @@ with all game rules in a pure-logic core that is unit-tested headlessly.
 
 ## Status
 
-**Planning + scaffold in place.** The design is complete and the raylib build
-scaffold is set up (a working `libraylib.a` is already built). Game code has not
-been written yet — `src/main.c` is still the quickstart template.
+**Playable and feature-complete.** All three tiers are implemented, unit-tested
+headlessly (80 test cases / 336 assertions), and the game runs at 60 FPS.
 
-Design docs:
+Docs:
+- [docs/PROGRESS.md](docs/PROGRESS.md) — per-feature build log (what's done).
 - [PRD.md](PRD.md) — scope, modes, tiers, non-goals.
 - [docs/TDD.md](docs/TDD.md) — technical design: module map, core/render split,
   tick model, data representation, test strategy, build.
 - [DECISIONS.md](DECISIONS.md) — architecture decisions (ADRs).
 - [CHANGELOG.md](CHANGELOG.md) — changes, newest under `[Unreleased]`.
 
-## What it will be
+## Features
 
 - 10×20 Tetris: seven tetrominoes, 7-bag randomizer, ghost piece, next-piece
   preview, wall-kick rotation, soft/hard drop, scoring, level progression.
-- Modes: Marathon (40 lines), Sprint (10 lines, timed), Ultra (survive garbage).
-- Later tiers: DAS/ARR, lock delay, hold, combos, T-spins, juice
-  (shake/particles), a heuristic AI/demo, and settings/high-score persistence.
+- **Modes:** Marathon (40 lines), Sprint (10 lines, timed), Ultra (survive
+  garbage) — with a start menu to pick mode + difficulty.
+- **Feel:** DAS/ARR + SOCD input, lock delay (move/rotate reset), combo tracking,
+  hard-drop animation.
+- **Polish:** T-spin detection & scoring, screen shake + line-clear particles,
+  per-mode high-score persistence, and a heuristic AI demo (press **A**).
+
+## Controls
+
+| Action | Key(s) |
+|---|---|
+| Move | ← / → (hold for DAS/ARR auto-shift) |
+| Soft drop | ↓ |
+| Rotate | Z (CCW) · X or ↑ (CW) |
+| Hard drop | Space |
+| Pause / Restart / Menu | P / R / M |
+| AI demo (autoplay) | A |
+| Quit | Esc |
+
+Menu: ↑/↓ pick mode, ←/→ pick difficulty, Enter/Space start.
 
 ## Build (Linux)
 

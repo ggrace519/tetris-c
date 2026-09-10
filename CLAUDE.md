@@ -26,10 +26,18 @@ and audio live in a thin raylib `app` layer.
 
 ## Status
 
-**Tier 1 complete — playable.** Pure-logic core (all rules) + raylib app (window,
-60 FPS loop, input, rendering) are implemented and verified: 21 core test cases
-pass headlessly and the game runs at 60 FPS. Tier 2 (modes, DAS/ARR, lock delay,
-combos, drop animation) is in progress — see `docs/PROGRESS.md`.
+**Feature-complete (all 3 tiers).** The full python-tetris parity feature set is
+implemented, tested headlessly (80 core test cases / 336 assertions), and the
+game runs at 60 FPS:
+- **Tier 1** — 10×20 board, 7-bag, SRS-like kicks, ghost, next, soft/hard drop,
+  scoring, levels, pause/restart/game-over.
+- **Tier 2** — Marathon/Sprint/Ultra modes + start menu, DAS/ARR + lock delay +
+  SOCD, combo tracking, hard-drop animation.
+- **Tier 3** — T-spin detection (ADR-0006), high-score persistence, juice
+  (screen shake + particles), heuristic AI demo (toggle A).
+
+See `docs/PROGRESS.md` for the per-feature log. Optional remaining polish:
+rebindable keys / a settings screen.
 
 ## Commands
 
