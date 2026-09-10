@@ -3,6 +3,7 @@
 #include "core/board.hpp"
 #include "core/constants.hpp"
 #include "core/piece.hpp"
+#include "test_helpers.hpp"
 
 using namespace tetris;
 
@@ -89,7 +90,7 @@ TEST_CASE("hard drop: lands on floor, scores 2/cell, and locks") {
     Board b(9);
     b.setActiveForTest(placed(ShapeId::O, 3, 0, 0));
     const long before = b.score();
-    b.hardDrop();
+    hardDropAndSettle(b);  // hardDrop() now animates; settle to lock
     // O landed: its bottom cells should be on the last row.
     // Score increased by 2 * distance (>0 since it fell from top).
     CHECK(b.score() > before);
@@ -168,7 +169,7 @@ TEST_CASE("7-bag: each 7-piece window contains all 7 shapes once (seeded)") {
     for (int i = 0; i < kShapeCount; ++i) {
         count0[static_cast<int>(b.current().shape())]++;
         // Move current out of the way and lock to spawn the next.
-        b.hardDrop();
+        hardDropAndSettle(b);
         if (b.gameOver()) break;  // shouldn't happen this early
     }
     // Note: current+next come from the same bag stream; after 7 draws we have seen
@@ -215,7 +216,7 @@ TEST_CASE("deterministic seed reproduces the same piece sequence") {
     Board a(555), c(555);
     for (int i = 0; i < 5; ++i) {
         CHECK(a.current().shape() == c.current().shape());
-        a.hardDrop();
-        c.hardDrop();
+        hardDropAndSettle(a);
+        hardDropAndSettle(c);
     }
 }

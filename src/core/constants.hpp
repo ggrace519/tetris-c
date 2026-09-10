@@ -126,10 +126,11 @@ inline constexpr int kLinesPerLevel = 10;
 inline constexpr int kHardDropPerCell = 2;  // hard_drop: distance * 2
 inline constexpr int kComboBonusPerLevel = 50;  // combo bonus = combo * 50 * level
 
-// Feel timings (settings.py on innovation/das-lock-delay).
+// Feel timings (settings.py on innovation/das-lock-delay + drop-animation).
 inline constexpr double kLockDelay = 0.5;   // seconds a landed piece waits before locking
 inline constexpr double kDasSeconds = 0.167;  // Delayed Auto Shift
 inline constexpr double kArrSeconds = 0.033;  // Auto Repeat Rate
+inline constexpr double kDropAnimDuration = 0.08;  // hard-drop stretch animation
 
 // Spawn position (settings.py Piece.__init__: x=3, y=0)
 inline constexpr int kSpawnX = 3;

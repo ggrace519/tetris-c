@@ -82,11 +82,27 @@ TEST_CASE("rotate reset: rotating while landed refreshes the lock timer") {
     CHECK(filledCells(b) == 0);  // still not locked
 }
 
-TEST_CASE("hard drop bypasses lock delay and locks immediately") {
+TEST_CASE("hard drop bypasses the 0.5s lock delay (locks after the drop animation)") {
     Board b(6);
     b.setActiveForTest(placed(ShapeId::O, 3, 0, 0));
     b.hardDrop();
-    CHECK(filledCells(b) == 4);  // locked instantly, no delay needed
+    // hardDrop starts a stretch animation, not a 0.5s lock-delay wait.
+    CHECK(b.animating());
+    CHECK(filledCells(b) == 0);  // not locked mid-animation
+    // The animation is far shorter than the lock delay: it completes (and locks)
+    // well before 0.5s.
+    CHECK(kDropAnimDuration < kLockDelay);
+    const bool locked = b.step(kDropAnimDuration + 0.001);
+    CHECK(locked);
+    CHECK(filledCells(b) == 4);
+}
+
+TEST_CASE("hard drop onto the floor with zero distance locks immediately (no anim)") {
+    Board b(66);
+    b.setActiveForTest(placed(ShapeId::O, 3, kRows - 2, 0));  // already resting
+    b.hardDrop();
+    CHECK_FALSE(b.animating());       // distance 0 → no animation
+    CHECK(filledCells(b) == 4);       // locked right away
 }
 
 TEST_CASE("soft drop while resting still locks (move fails, timer keeps running)") {

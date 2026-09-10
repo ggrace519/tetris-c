@@ -24,7 +24,12 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
 - [x] Combo tracking (`innovation/combos` @ 12dd321) ✅
       Core: consecutive line-clearing locks increment combo; bonus = combo*50*level;
       a no-clear lock resets it. maxCombo tracked. HUD shows COMBO xN. +5 tests.
-- [ ] Hard-drop animation (`innovation/drop-animation` @ 9d9054a)
+- [x] Hard-drop animation (`innovation/drop-animation` @ 9d9054a) ✅
+      Core: hardDrop() credits score + starts a 0.08s stretch animation (no
+      instant lock); step() advances it and locks on completion; move/rotate/
+      hardDrop are no-ops mid-anim. App: interpolated piece + trail. +8 tests.
+
+**Tier 2 COMPLETE** — modes, DAS/ARR+lock delay, combos, drop animation.
 
 ### Tier 3 — Polish + persistence
 - [ ] T-spin detection (`innovation/t-spin` @ 40c94f5)

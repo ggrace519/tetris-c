@@ -20,6 +20,8 @@ void Board::reset() {
     gravityTimer_ = 0.0;
     lockTimer_ = 0.0;
     landed_ = false;
+    dropAnimActive_ = false;
+    animProgress_ = 0.0;
     current_ = nextFromBag();
     next_ = nextFromBag();
     if (collides(current_)) gameOver_ = true;
@@ -59,6 +61,7 @@ bool Board::collides(const Piece& p, int atX, int atY, int rot) const {
 }
 
 bool Board::move(int dx, int dy) {
+    if (dropAnimActive_) return false;  // locked out during hard-drop animation
     const int nx = current_.x() + dx;
     const int ny = current_.y() + dy;
     if (collides(current_, nx, ny, current_.rotation())) return false;
@@ -68,6 +71,7 @@ bool Board::move(int dx, int dy) {
 }
 
 bool Board::rotate(int direction) {
+    if (dropAnimActive_) return false;  // locked out during hard-drop animation
     const int newRot = current_.rotation() + direction;
     int nKicks = 0;
     const Cell* kicks = current_.kicks(nKicks);
@@ -85,10 +89,25 @@ bool Board::rotate(int direction) {
 }
 
 void Board::hardDrop() {
-    int distance = 0;
-    while (move(0, 1)) ++distance;
-    score_ += static_cast<long>(distance) * kHardDropPerCell;
-    lock();
+    if (dropAnimActive_ || gameOver_) return;
+    // Find the landing row without moving the piece yet.
+    int landingY = current_.y();
+    while (!collides(current_, current_.x(), landingY + 1, current_.rotation())) {
+        ++landingY;
+    }
+    const int distance = landingY - current_.y();
+    score_ += static_cast<long>(distance) * kHardDropPerCell;  // credit score now
+
+    if (distance == 0) {
+        // Already resting — lock immediately (no animation needed).
+        lock();
+        return;
+    }
+    // Start the stretch animation; the piece locks when it completes (in step()).
+    dropAnimActive_ = true;
+    animStartY_ = current_.y();
+    animLandingY_ = landingY;
+    animProgress_ = 0.0;
 }
 
 void Board::lock() {
@@ -126,6 +145,20 @@ void Board::lock() {
 
 bool Board::step(double dt) {
     if (gameOver_) return false;
+
+    // Hard-drop animation takes over the step: no gravity/lock-delay while it runs.
+    if (dropAnimActive_) {
+        animProgress_ += dt / kDropAnimDuration;
+        if (animProgress_ >= 1.0) {
+            // Animation done: snap the piece to its landing row and lock it.
+            current_.setPos(current_.x(), animLandingY_);
+            dropAnimActive_ = false;
+            animProgress_ = 0.0;
+            lock();  // lock() clears timing state and spawns the next piece
+            return true;
+        }
+        return false;
+    }
 
     // Is the piece resting on the stack (can't move down)?
     const bool resting = collides(current_, current_.x(), current_.y() + 1,

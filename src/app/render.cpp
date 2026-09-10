@@ -42,13 +42,36 @@ void drawPlayfield(const Board& board) {
     }
 
     if (!board.gameOver()) {
-        // Ghost (outline at the landing position).
-        for (const Cell& gc : board.ghostCells()) {
-            if (gc.y >= 0) drawCell(gc.x, gc.y, board.current().color(), /*ghost=*/true);
-        }
-        // Active piece.
-        for (const Cell& ac : board.current().cells()) {
-            if (ac.y >= 0) drawCell(ac.x, ac.y, board.current().color());
+        if (board.animating()) {
+            // Hard-drop animation: draw the piece interpolated between its start
+            // and landing rows, with a bright trail behind it for feedback.
+            const double t = board.animProgress();
+            const double interpY = board.animStartY() +
+                                   (board.animLandingY() - board.animStartY()) * t;
+            const Piece& p = board.current();
+            // Trail: faint copies from start to current interpolated position.
+            for (const Cell& ac : p.cellsAt(p.x(), board.animStartY(), p.rotation())) {
+                if (ac.y < 0) continue;
+                const int px = ac.x * kCellPx;
+                const int topY = static_cast<int>(ac.y * kCellPx);
+                const int botY = static_cast<int>((ac.y + (interpY - board.animStartY())) * kCellPx);
+                Color c = p.color();
+                DrawRectangle(px, topY, kCellPx, botY - topY + kCellPx,
+                              ::Color{c.r, c.g, c.b, 90});
+            }
+            // The piece itself at the interpolated row.
+            for (const Cell& ac : p.cellsAt(p.x(), static_cast<int>(interpY), p.rotation())) {
+                if (ac.y >= 0) drawCell(ac.x, ac.y, p.color());
+            }
+        } else {
+            // Ghost (outline at the landing position).
+            for (const Cell& gc : board.ghostCells()) {
+                if (gc.y >= 0) drawCell(gc.x, gc.y, board.current().color(), /*ghost=*/true);
+            }
+            // Active piece.
+            for (const Cell& ac : board.current().cells()) {
+                if (ac.y >= 0) drawCell(ac.x, ac.y, board.current().color());
+            }
         }
     }
 }

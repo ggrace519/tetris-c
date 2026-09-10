@@ -59,6 +59,15 @@ public:
     // Is the active piece currently resting (lock-delay running)?
     bool landed() const { return landed_; }
 
+    // --- hard-drop animation (innovation/drop-animation) ---
+    // While a hard drop is animating, the piece is "committed" to its landing row
+    // but not yet locked; move/rotate/hardDrop are no-ops. The app interpolates the
+    // drawn y between animStartY() and animLandingY() by animProgress() (0..1).
+    bool animating() const { return dropAnimActive_; }
+    int animStartY() const { return animStartY_; }
+    int animLandingY() const { return animLandingY_; }
+    double animProgress() const { return animProgress_; }
+
     // Drop active piece to landing row, score the distance, and lock.
     void hardDrop();
 
@@ -105,6 +114,12 @@ private:
     double gravityTimer_ = 0.0;
     double lockTimer_ = 0.0;
     bool landed_ = false;
+
+    // Hard-drop animation state.
+    bool dropAnimActive_ = false;
+    int animStartY_ = 0;
+    int animLandingY_ = 0;
+    double animProgress_ = 0.0;
 
     void resetLockDelay();
 };
