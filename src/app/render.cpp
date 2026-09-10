@@ -80,16 +80,18 @@ void drawPlayfield(const Board& board) {
 }
 
 void drawNextPreview(const Board& board) {
+    // NEXT sits at the top of the side panel. Label at y=15; piece box below it.
     const int panelX = kPlayW + 20;
-    const int panelY = 60;
-    DrawText("NEXT", panelX, panelY - 30, 20, rl(kColWhite));
-    // Draw the next piece's rotation-0 cells in a small box.
+    const int labelY = 15;
+    const int boxY = 40;               // top of the piece box
+    const int cell = 22;               // smaller cells so a piece fits cleanly
+    DrawText("NEXT", panelX, labelY, 20, rl(kColGray));
     const Piece& n = board.next();
     for (const Cell& c : n.cellsAt(0, 0, 0)) {
-        const int px = panelX + c.x * kCellPx;
-        const int py = panelY + c.y * kCellPx;
-        DrawRectangle(px, py, kCellPx, kCellPx, rl(n.color()));
-        DrawRectangleLines(px, py, kCellPx, kCellPx, rl(kColDarkBg));
+        const int px = panelX + c.x * cell;
+        const int py = boxY + c.y * cell;
+        DrawRectangle(px, py, cell, cell, rl(n.color()));
+        DrawRectangleLines(px, py, cell, cell, rl(kColDarkBg));
     }
 }
 
@@ -102,51 +104,44 @@ const char* modeName(GameMode m) {
     return "";
 }
 
+// Panel layout: NEXT occupies y=15..~110 (drawn by drawNextPreview). The stat
+// stack starts below it. `best`, combo/T-spin, and AI-DEMO indicators are drawn
+// by drawFrame at reserved y-slots to avoid overlap.
 void drawHud(const ModeController& mc) {
     const Board& board = mc.board();
     const int x = kPlayW + 20;
     char buf[64];
 
-    DrawText(modeName(mc.mode()), x, 20, 22, rl(kColWhite));
-    // Mode-specific objective line.
+    // Mode title + objective line (below the NEXT preview).
+    DrawText(modeName(mc.mode()), x, 120, 22, rl(kColWhite));
     if (mc.mode() == GameMode::Ultra) {
         std::snprintf(buf, sizeof(buf), "Time %.1fs", mc.elapsed());
     } else {
         std::snprintf(buf, sizeof(buf), "%d / %d lines  %.1fs",
                       board.linesCleared(), mc.winLines(), mc.elapsed());
     }
-    DrawText(buf, x, 46, 16, rl(kColGray));
+    DrawText(buf, x, 146, 15, rl(kColGray));
 
-    DrawText("SCORE", x, 100, 18, rl(kColGray));
+    // SCORE (+ BEST is drawn just under it by drawFrame at y=196).
+    DrawText("SCORE", x, 176, 16, rl(kColGray));
     std::snprintf(buf, sizeof(buf), "%ld", board.score());
-    DrawText(buf, x, 122, 26, rl(kColWhite));
+    DrawText(buf, x, 196, 24, rl(kColWhite));
 
-    DrawText("LEVEL", x, 180, 18, rl(kColGray));
+    DrawText("LEVEL", x, 260, 16, rl(kColGray));
     std::snprintf(buf, sizeof(buf), "%d", board.level());
-    DrawText(buf, x, 202, 26, rl(kColWhite));
+    DrawText(buf, x, 280, 24, rl(kColWhite));
 
-    DrawText("LINES", x, 260, 18, rl(kColGray));
+    DrawText("LINES", x, 330, 16, rl(kColGray));
     std::snprintf(buf, sizeof(buf), "%d", board.linesCleared());
-    DrawText(buf, x, 282, 26, rl(kColWhite));
+    DrawText(buf, x, 350, 24, rl(kColWhite));
 
-    // Combo indicator (only while an active combo run is going).
-    if (board.combo() > 1) {
-        std::snprintf(buf, sizeof(buf), "COMBO x%d", board.combo());
-        DrawText(buf, x, 340, 24, rl(kColYellow));
-    }
-    // T-spin indicator for the most recent lock.
-    if (board.lastTSpin() == Board::TSpin::Full) {
-        DrawText("T-SPIN!", x, 372, 24, rl(kColPurple));
-    } else if (board.lastTSpin() == Board::TSpin::Mini) {
-        DrawText("T-SPIN MINI", x, 372, 20, rl(kColPurple));
-    }
-
-    DrawText("Move  <- ->", x, 470, 16, rl(kColGray));
-    DrawText("Rotate  Z / X", x, 490, 16, rl(kColGray));
-    DrawText("Soft drop  v", x, 510, 16, rl(kColGray));
-    DrawText("Hard drop  SPACE", x, 530, 16, rl(kColGray));
-    DrawText("Pause P  AI demo A", x, 550, 16, rl(kColGray));
-    DrawText("Menu M  Restart R", x, 570, 16, rl(kColGray));
+    // Controls at the bottom.
+    DrawText("Move  <- ->", x, 468, 15, rl(kColGray));
+    DrawText("Rotate  Z / X", x, 487, 15, rl(kColGray));
+    DrawText("Soft drop  v", x, 506, 15, rl(kColGray));
+    DrawText("Hard drop  SPACE", x, 525, 15, rl(kColGray));
+    DrawText("Pause P  AI demo A", x, 544, 15, rl(kColGray));
+    DrawText("Menu M  Restart R", x, 563, 15, rl(kColGray));
 }
 
 void drawCenterMessage(const char* title, const char* subtitle) {
@@ -186,7 +181,7 @@ void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
     drawNextPreview(board);
     drawHud(mc);
 
-    // BEST line under the score panel.
+    // BEST line, tucked just under the SCORE value (which ends ~y=220).
     {
         char buf[64];
         const int x = kPlayW + 20;
@@ -195,11 +190,26 @@ void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
         } else {
             std::snprintf(buf, sizeof(buf), "BEST %ld", best.bestScore);
         }
-        DrawText(buf, x, 155, 16, rl(kColGray));
+        DrawText(buf, x, 224, 15, rl(kColGray));
     }
 
-    if (aiOn) {
-        DrawText("AI DEMO", kPlayW + 20, 340, 22, rl(kColGreen));
+    // Event indicators zone (between LINES at y=350 and controls at y=468):
+    // combo, T-spin, and AI-DEMO share this band without overlapping each other.
+    {
+        const int x = kPlayW + 20;
+        char buf[32];
+        if (board.combo() > 1) {
+            std::snprintf(buf, sizeof(buf), "COMBO x%d", board.combo());
+            DrawText(buf, x, 396, 22, rl(kColYellow));
+        }
+        if (board.lastTSpin() == Board::TSpin::Full) {
+            DrawText("T-SPIN!", x, 422, 22, rl(kColPurple));
+        } else if (board.lastTSpin() == Board::TSpin::Mini) {
+            DrawText("T-SPIN MINI", x, 422, 18, rl(kColPurple));
+        }
+        if (aiOn) {
+            DrawText("AI DEMO", x, 448, 18, rl(kColGreen));  // its own line above the controls
+        }
     }
 
     if (screen == Screen::Paused) {
