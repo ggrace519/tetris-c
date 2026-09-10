@@ -131,15 +131,22 @@ void Board::lock() {
         grid_[c.y][c.x] = current_.shape();
     }
 
+    // All scoring for THIS lock multiplies by the level BEFORE the clear (the
+    // guideline convention "level is the level before the line clear"). Capture it
+    // up front so line score, combo bonus, and T-spin bonus are all consistent —
+    // previously the T-spin bonus read the recomputed level and could use a
+    // different multiplier than the line score within the same lock.
+    const int scoreLevel = level_;
+
     const int lines = clearLines();
     lastClearCount_ = lines;  // signal for app-side juice
     if (lines > 0) {
-        score_ += static_cast<long>(kLineScores[lines]) * level_;
+        score_ += static_cast<long>(kLineScores[lines]) * scoreLevel;
         linesTotal_ += lines;
         // Combo: consecutive line-clearing locks. First clear = combo 1.
         ++combo_;
         if (combo_ > maxCombo_) maxCombo_ = combo_;
-        score_ += static_cast<long>(combo_) * kComboBonusPerLevel * level_;
+        score_ += static_cast<long>(combo_) * kComboBonusPerLevel * scoreLevel;
         level_ = linesTotal_ / kLinesPerLevel + 1;
         fallSpeed_ = std::max(kMinFallSpeed,
                               kStartFallSpeed - (level_ - 1) * kFallSpeedPerLevel);
@@ -147,7 +154,7 @@ void Board::lock() {
         combo_ = 0;  // a lock with no clear breaks the combo
     }
 
-    // T-spin bonus (× level), added on top of any line score (ADR-0006).
+    // T-spin bonus (× the pre-clear level), added on top of any line score (ADR-0006).
     if (tspin != TSpin::None) {
         int bonus = 0;
         if (tspin == TSpin::Mini) {
@@ -160,7 +167,7 @@ void Board::lock() {
                 default: bonus = kTSpinTriple; break;  // 3
             }
         }
-        score_ += static_cast<long>(bonus) * level_;
+        score_ += static_cast<long>(bonus) * scoreLevel;
     }
 
     current_ = next_;

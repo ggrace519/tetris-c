@@ -79,6 +79,39 @@ TEST_CASE("floor counts as a blocked corner") {
     CHECK(b.lastTSpin() == Board::TSpin::Full);  // 2 floor corners + 1 filled = 3
 }
 
+TEST_CASE("REGRESSION: all scoring terms in one lock use the pre-clear level") {
+    // Preload 9 cleared lines so the NEXT single clear tips level 1 -> 2. A T-spin
+    // single that IS that 10th line must score ALL its terms (line + combo + T-spin
+    // bonus) at level 1 (pre-clear), not a mix of level 1 and level 2.
+    Board b(77);
+    // Clear 9 lines the direct way (fill bottom row, lock a harmless piece).
+    for (int i = 0; i < 9; ++i) {
+        for (int c = 0; c < kCols - 2; ++c) b.setCellForTest(c, kRows - 1, ShapeId::J);
+        b.setActiveForTest(placed(ShapeId::O, 7, kRows - 2, 0));  // fills cols 8,9 → clears row
+        b.lock();
+    }
+    REQUIRE(b.linesCleared() == 9);
+    REQUIRE(b.level() == 1);  // still level 1 (9 < 10)
+
+    // Now a T-spin single as the 10th line → tips to level 2 AFTER scoring.
+    const int x = 3, y = kRows - 3;
+    for (int c = 0; c < kCols; ++c) if (c != x + 1) b.setCellForTest(c, kRows - 1, ShapeId::I);
+    b.setCellForTest(x, y, ShapeId::I);
+    b.setCellForTest(x + 2, y, ShapeId::I);
+    b.setCellForTest(x, y + 2, ShapeId::I);
+    Piece t = placed(ShapeId::T, x, y, 2);
+    t.setSpin(Cell{-1, 0});
+    b.setActiveForTest(t);
+    const long before = b.score();
+    b.lock();
+    REQUIRE(b.lastTSpin() == Board::TSpin::Full);
+    REQUIRE(b.linesCleared() == 10);
+    REQUIRE(b.level() == 2);  // level bumped after this lock
+    // But all terms scored at level 1: line(100) + combo(10*50) + tspin(200), ×1.
+    const long expected = 100 * 1 + b.combo() * kComboBonusPerLevel * 1 + kTSpinSingle * 1;
+    CHECK(b.score() - before == expected);
+}
+
 TEST_CASE("REGRESSION: a T that merely FELL (gravity) into a blocked slot is not a T-spin") {
     Board b(99);
     const int x = 3;
