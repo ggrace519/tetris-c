@@ -134,6 +134,7 @@ inline constexpr int kTSpinTriple = 800;
 
 // Feel timings (settings.py on innovation/das-lock-delay + drop-animation).
 inline constexpr double kLockDelay = 0.5;   // seconds a landed piece waits before locking
+inline constexpr int kMaxLockResets = 15;   // move/rotate resets before lock is forced (guideline "extended placement")
 inline constexpr double kDasSeconds = 0.167;  // Delayed Auto Shift
 inline constexpr double kArrSeconds = 0.033;  // Auto Repeat Rate
 inline constexpr double kDropAnimDuration = 0.08;  // hard-drop stretch animation

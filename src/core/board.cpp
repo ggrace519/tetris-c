@@ -22,6 +22,7 @@ void Board::reset() {
     gravityTimer_ = 0.0;
     lockTimer_ = 0.0;
     landed_ = false;
+    lockResets_ = 0;
     dropAnimActive_ = false;
     animProgress_ = 0.0;
     current_ = nextFromBag();
@@ -30,8 +31,14 @@ void Board::reset() {
 }
 
 void Board::resetLockDelay() {
-    // Move/rotate reset: while resting, any successful move or rotate refreshes
-    // the lock timer and un-lands the piece (it may now be able to fall again).
+    // Move/rotate reset: while resting, a successful move or rotate refreshes the
+    // lock timer and un-lands the piece — BUT only up to kMaxLockResets times per
+    // piece (guideline "extended placement"). Without this cap, alternating
+    // left/right taps on a flat surface would refresh the timer forever and the
+    // piece would never lock. Once capped, moves/rotates still apply; the piece
+    // just no longer delays its lock, so the lock timer runs to completion.
+    if (landed_ && lockResets_ >= kMaxLockResets) return;
+    if (landed_) ++lockResets_;
     lockTimer_ = 0.0;
     landed_ = false;
 }
@@ -172,10 +179,11 @@ void Board::lock() {
 
     current_ = next_;
     next_ = nextFromBag();
-    // Fresh piece: clear lock/gravity timing.
+    // Fresh piece: clear lock/gravity timing and the reset counter.
     gravityTimer_ = 0.0;
     lockTimer_ = 0.0;
     landed_ = false;
+    lockResets_ = 0;
     if (collides(current_)) gameOver_ = true;
 }
 

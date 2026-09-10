@@ -125,6 +125,7 @@ private:
     double gravityTimer_ = 0.0;
     double lockTimer_ = 0.0;
     bool landed_ = false;
+    int lockResets_ = 0;  // move/rotate resets used by the current piece (capped)
 
     // Hard-drop animation state.
     bool dropAnimActive_ = false;

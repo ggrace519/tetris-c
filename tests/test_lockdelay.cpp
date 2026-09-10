@@ -124,6 +124,28 @@ TEST_CASE("soft drop while resting still locks (move fails, timer keeps running)
     CHECK(filled == 4);
 }
 
+TEST_CASE("lock-delay reset is capped: alternating taps cannot stall forever") {
+    // Without a reset cap, alternating left/right moves on a flat floor would
+    // refresh the lock timer every frame and the piece would never lock.
+    Board b(8);
+    b.setActiveForTest(placed(ShapeId::O, 3, kRows - 2, 0));  // resting on the floor
+    b.step(0.01);  // land it
+    REQUIRE(b.landed());
+    bool locked = false;
+    // Tap left/right alternately, stepping a little each frame. After the reset cap
+    // (15) is exhausted, the lock timer runs out and the piece locks.
+    for (int i = 0; i < 200 && !locked; ++i) {
+        b.move((i % 2 == 0) ? -1 : 1, 0);   // wiggle
+        locked = b.step(kLockDelay);         // large dt so lock fires once uncapped
+    }
+    CHECK(locked);
+    int filled = 0;
+    for (const auto& row : b.grid())
+        for (const auto& c : row)
+            if (c.has_value()) ++filled;
+    CHECK(filled == 4);
+}
+
 TEST_CASE("moving off a ledge un-lands the piece (gravity resumes)") {
     Board b(7);
     // Build a one-column ledge so the piece rests, then can move off it.
