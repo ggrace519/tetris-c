@@ -67,7 +67,11 @@ tetris-c/
 └── resources/    assets
 ```
 
-## Credits & license
+## License
 
-Scaffolded from [raylib-quickstart](https://github.com/raylib-extras/raylib-quickstart)
-by Jeffery Myers (CC0 1.0). raylib is licensed under zlib/libpng.
+This project is released under the [MIT License](LICENSE).
+
+Bundled third-party components keep their own licenses:
+[raylib](https://www.raylib.com/) (zlib/libpng),
+[raylib-quickstart](https://github.com/raylib-extras/raylib-quickstart) scaffold
+by Jeffery Myers (CC0 1.0), and [doctest](https://github.com/doctest/doctest) (MIT).
