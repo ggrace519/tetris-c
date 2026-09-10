@@ -423,3 +423,10 @@ build/external/
 *.gcno
 *.gcda
 /coverage/
+
+# premake-generated makefiles (regenerate with: cd build && ./premake5 gmake).
+# The quickstart already ignores the top-level 'Makefile'; ignore the sibling
+# *.make files too so a fresh clone regenerates all three consistently rather
+# than getting a partial set that breaks `make`.
+/raylib.make
+/tetris-c.make
