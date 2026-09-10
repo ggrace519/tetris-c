@@ -124,21 +124,36 @@ TEST_CASE("soft drop while resting still locks (move fails, timer keeps running)
     CHECK(filled == 4);
 }
 
-TEST_CASE("lock-delay reset is capped: alternating taps cannot stall forever") {
+TEST_CASE("lock-delay reset is capped: alternating taps cannot stall forever (#3)") {
     // Without a reset cap, alternating left/right moves on a flat floor would
     // refresh the lock timer every frame and the piece would never lock.
+    //
+    // This must step with a SMALL per-frame dt so the reset COUNTER actually
+    // accumulates toward kMaxLockResets. A previous version of this test stepped
+    // kLockDelay (a full lock-delay) each frame, so the piece locked on iteration 1
+    // and the cap was never exercised — the test passed even with the cap removed.
+    const double frame = 0.016;  // ~60 FPS
     Board b(8);
     b.setActiveForTest(placed(ShapeId::O, 3, kRows - 2, 0));  // resting on the floor
-    b.step(0.01);  // land it
+    b.step(frame);  // land it
     REQUIRE(b.landed());
+
+    // Each successful move resets the lock timer. While under the cap, the piece
+    // must NOT lock — even though many frames pass — because every wiggle refreshes
+    // the timer. The number of resets before the cap forces a lock is kMaxLockResets.
     bool locked = false;
-    // Tap left/right alternately, stepping a little each frame. After the reset cap
-    // (15) is exhausted, the lock timer runs out and the piece locks.
-    for (int i = 0; i < 200 && !locked; ++i) {
-        b.move((i % 2 == 0) ? -1 : 1, 0);   // wiggle
-        locked = b.step(kLockDelay);         // large dt so lock fires once uncapped
+    int iters = 0;
+    for (; iters < 500 && !locked; ++iters) {
+        REQUIRE(b.move((iters % 2 == 0) ? -1 : 1, 0));  // wiggle always succeeds (flat floor)
+        locked = b.step(frame);
     }
     CHECK(locked);
+    // With the cap at kMaxLockResets, locking cannot happen on the first frame; it
+    // must take strictly more than one wiggle (proves the timer was being reset and
+    // the cap — not a single lock-delay — is what finally forces the lock).
+    CHECK(iters > 1);
+    CHECK(iters >= kMaxLockResets);  // the cap gated the lock, not a lone timeout
+
     int filled = 0;
     for (const auto& row : b.grid())
         for (const auto& c : row)

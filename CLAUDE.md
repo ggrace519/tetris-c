@@ -27,7 +27,7 @@ and audio live in a thin raylib `app` layer.
 ## Status
 
 **Feature-complete (all 3 tiers).** The full python-tetris parity feature set is
-implemented, tested headlessly (80 core test cases / 336 assertions), and the
+implemented, tested headlessly (93 core test cases / 428 assertions), and the
 game runs at 60 FPS:
 - **Tier 1** — 10×20 board, 7-bag, SRS-like kicks, ghost, next, soft/hard drop,
   scoring, levels, pause/restart/game-over.

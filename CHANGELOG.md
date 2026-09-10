@@ -8,8 +8,8 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 - **Complete playable game (all three tiers).** A C++/raylib Tetris with feature
-  parity to `python-tetris`, on a raylib-free pure-logic core (88 headless test
-  cases / 362 assertions) plus a thin raylib app layer, running at 60 FPS:
+  parity to `python-tetris`, on a raylib-free pure-logic core (93 headless test
+  cases / 428 assertions) plus a thin raylib app layer, running at 60 FPS:
   - **Tier 1:** 10×20 board, 7-bag randomizer, simplified-SRS wall kicks, ghost
     piece, next preview, soft/hard drop, classic scoring, level/speed progression,
     pause/restart/game-over.
@@ -25,6 +25,27 @@ All notable changes to this project are documented here. Format follows
   injection was dead code there; the port implements the intended behavior.
 - Fixed a scoring bug found during the port: a T that merely *fell* (gravity) into
   a blocked slot scored a free T-spin; the gravity move now clears the spin flag.
+
+### Fixed
+- **Ultra garbage no longer tops out a piece resting on an empty well** (#2). A
+  garbage row shifts the whole stack up; the falling piece now rises with it
+  instead of being left embedded in the risen garbage and wrongly counted as a
+  top-out. A genuinely full well still ends the game. Regression tests added.
+- **Lock-delay reset-cap test now actually exercises the cap** (#3). The prior
+  test stepped a full lock-delay each wiggle and locked on the first iteration, so
+  it passed even with `kMaxLockResets` removed; it now steps one frame at a time so
+  the cap is what forces the lock. Verified: with the cap removed the test fails.
+- **AI demo plays coherently** (#4): the target placement is computed once per
+  piece (cached and recomputed only when the active piece changes, detected via a
+  new `Board::piecesLocked()` counter that advances on every lock path — gravity,
+  lock-delay, or hard drop) instead of re-rolling the error and re-searching every
+  decision tick, which made Easy/Normal pick a different column each action. The AI
+  also stops retrying a rotation/move it can't complete instead of stalling on it.
+- **AI demo now ignores manual piece input** (#4): held Left/Right/Down no longer
+  move the piece while the demo drives (only the edge-triggered keys were suppressed
+  before).
+- Line-clear juice (shake/particles) now fires for an instant Space-to-lock clear,
+  and a same-frame CW+CCW key press applies a single rotation instead of two.
 
 ### Added (earlier)
 - Initial planning documents: PRD, technical design (docs/TDD.md), architecture

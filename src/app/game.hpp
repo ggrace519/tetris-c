@@ -23,7 +23,7 @@ public:
 private:
     void processMenuInput();
     void processPlayInput();
-    void updateGravity(float dt);
+    void updateGravity(float dt, int linesBefore);
     void startSelectedMode();
     void recordResult();  // submit current run to high scores + save (once per end)
 
@@ -50,6 +50,14 @@ private:
     TetrisAI ai_;
     double aiTimer_ = 0.0;
     void updateAi(double dt);
+    // Cached target placement for the CURRENT piece. bestMove() re-rolls its error
+    // and re-searches on every call, so calling it each tick made Easy/Normal
+    // incoherent (a fresh column/rotation choice per action, #4). Compute it ONCE
+    // per piece and step toward that fixed target. Keyed on Board::piecesLocked()
+    // so it recomputes whenever the piece changes via ANY lock path (gravity,
+    // lock-delay, or hard drop) — not only the hard drops the AI itself initiates.
+    AiMove aiPlan_{0, 0, false};
+    int aiPlanPiece_ = -1;  // piecesLocked() the cached plan was computed for
 };
 
 // Soft drop: ~20 rows/second while Down is held (a common feel value).

@@ -33,6 +33,10 @@ public:
     int linesCleared() const { return linesTotal_; }
     int combo() const { return combo_; }         // current consecutive-clear run
     int maxCombo() const { return maxCombo_; }
+    // Count of pieces locked this game (increments on EVERY lock — gravity,
+    // lock-delay, or hard drop). A stable "which piece is active" signal for the
+    // app-side AI plan cache, which must recompute whenever the piece changes.
+    int piecesLocked() const { return piecesLocked_; }
 
     // T-spin classification of the LAST lock (for HUD/feedback). None until a lock.
     enum class TSpin { None, Mini, Full };
@@ -114,6 +118,7 @@ private:
     int level_ = 1;
     int combo_ = 0;
     int maxCombo_ = 0;
+    int piecesLocked_ = 0;
     TSpin lastTSpin_ = TSpin::None;
     int lastClearCount_ = 0;
     double fallSpeed_ = kStartFallSpeed;
