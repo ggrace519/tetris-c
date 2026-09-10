@@ -112,6 +112,26 @@ TEST_CASE("REGRESSION: all scoring terms in one lock use the pre-clear level") {
     CHECK(b.score() - before == expected);
 }
 
+TEST_CASE("player hard drop after a spin into a blocked slot DOES score a T-spin (ADR-0006)") {
+    // Intended rule: player-initiated descent preserves the spin flag. Build a
+    // 3-corner blocked slot with the T one row above its resting spot, rotate
+    // (sets spin), then HARD DROP — it should still classify as a T-spin.
+    Board b(88);
+    const int x = 3;
+    const int slotY = kRows - 3;  // where the T will rest (rot 2)
+    b.setCellForTest(x, slotY, ShapeId::I);
+    b.setCellForTest(x + 2, slotY, ShapeId::I);
+    b.setCellForTest(x, slotY + 2, ShapeId::I);
+    // Place the T one row above the slot so hard drop moves it down by 1.
+    Piece t = placed(ShapeId::T, x, slotY - 1, 2);
+    b.setActiveForTest(t);
+    b.rotate(1); b.rotate(-1);  // player rotation → spin flag set (still at slotY-1)
+    REQUIRE(b.current().hasSpin());
+    b.hardDrop();
+    while (b.animating()) b.step(0.1);  // complete the drop → lock
+    CHECK(b.lastTSpin() != Board::TSpin::None);  // hard drop preserved the spin
+}
+
 TEST_CASE("REGRESSION: a T that merely FELL (gravity) into a blocked slot is not a T-spin") {
     Board b(99);
     const int x = 3;

@@ -174,11 +174,23 @@ kick-point upgrade) but it is self-consistent and matches the parity target.
 - Back-to-back / guideline B2B multiplier is **not** part of python-tetris's
   branch, so it is out of scope here (would arrive only with a guideline pass).
 
-**Amendment (2026-09-10):** python-tetris never clears `spin_axis` on a
-translation, only on spawn. Ported literally, that let a T which merely **fell**
-(gravity) into a blocked slot score a free T-spin with no player input — a
-scoring bug that fires automatically (verified, then regression-tested). Fixed by
-clearing the spin flag on the **gravity-driven** downward move in `step()` only —
-a **player** soft-drop still preserves it, and a hard drop (which never rotates)
-after a spin still counts. This is stricter than python-tetris but kills the free
-bonus while keeping the intended feel.
+**Amendment (2026-09-10) — spin-flag lifetime, made an explicit rule:**
+python-tetris never clears `spin_axis` on a translation, only on spawn. Ported
+literally, that let a T which merely **fell** (automatic gravity) into a blocked
+slot score a free T-spin with no player input — a scoring bug that fires with no
+player action (verified, then regression-tested).
+
+The deliberate rule this port adopts: **automatic descent clears the spin flag;
+player-initiated descent preserves it.** Concretely:
+- **Automatic gravity** (`step()`'s gravity move) **clears** the flag → a piece
+  that merely fell is never a T-spin.
+- **Player hard drop** and **player soft drop** (hold Down) **preserve** the flag
+  → a rotate-then-hard-drop / rotate-then-soft-drop into a blocked slot **does**
+  score a T-spin. This is intentional: those are deliberate player actions
+  immediately following the rotation, and rotate-then-hard-drop is the canonical
+  way a T-spin is executed.
+
+So yes, the same physical descent scores differently by input path — that is the
+intended distinction (skill/intent vs. passive falling), not an oversight. It is
+stricter than python-tetris (which scored the passive-fall case) and is covered by
+tests: gravity-descent → None (regression), and hard-drop-after-spin → scored.
