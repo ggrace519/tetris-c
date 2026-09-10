@@ -430,3 +430,6 @@ build/external/
 # than getting a partial set that breaks `make`.
 /raylib.make
 /tetris-c.make
+
+# Loose object files (e.g. from tests.mk)
+*.o
