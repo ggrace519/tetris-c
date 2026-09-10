@@ -13,6 +13,8 @@ void Board::reset() {
     score_ = 0;
     linesTotal_ = 0;
     level_ = 1;
+    combo_ = 0;
+    maxCombo_ = 0;
     fallSpeed_ = kStartFallSpeed;
     gameOver_ = false;
     gravityTimer_ = 0.0;
@@ -102,9 +104,15 @@ void Board::lock() {
     if (lines > 0) {
         score_ += static_cast<long>(kLineScores[lines]) * level_;
         linesTotal_ += lines;
+        // Combo: consecutive line-clearing locks. First clear = combo 1.
+        ++combo_;
+        if (combo_ > maxCombo_) maxCombo_ = combo_;
+        score_ += static_cast<long>(combo_) * kComboBonusPerLevel * level_;
         level_ = linesTotal_ / kLinesPerLevel + 1;
         fallSpeed_ = std::max(kMinFallSpeed,
                               kStartFallSpeed - (level_ - 1) * kFallSpeedPerLevel);
+    } else {
+        combo_ = 0;  // a lock with no clear breaks the combo
     }
 
     current_ = next_;

@@ -124,6 +124,7 @@ inline constexpr std::array<int, 5> kLineScores{0, 100, 300, 500, 800};
 
 inline constexpr int kLinesPerLevel = 10;
 inline constexpr int kHardDropPerCell = 2;  // hard_drop: distance * 2
+inline constexpr int kComboBonusPerLevel = 50;  // combo bonus = combo * 50 * level
 
 // Feel timings (settings.py on innovation/das-lock-delay).
 inline constexpr double kLockDelay = 0.5;   // seconds a landed piece waits before locking

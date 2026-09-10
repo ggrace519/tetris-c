@@ -137,9 +137,10 @@ TEST_CASE("scoring and level: lock a full row applies LINE_SCORES * level") {
     b.setActiveForTest(placed(ShapeId::O, 7, kRows - 2, 0));  // cells cols 8,9 rows 18,19
     const long before = b.score();
     b.lock();
-    // One line cleared → +100 * level(1). (No hard-drop bonus since we called lock directly.)
-    CHECK(b.score() == before + kLineScores[1] * 1);
+    // One line cleared → line score (100 * level 1) + combo bonus (combo 1 * 50 * 1).
+    CHECK(b.score() == before + kLineScores[1] * 1 + 1 * kComboBonusPerLevel * 1);
     CHECK(b.linesCleared() == 1);
+    CHECK(b.combo() == 1);
 }
 
 TEST_CASE("level rises every 10 lines and fall speed decreases") {

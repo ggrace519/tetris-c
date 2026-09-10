@@ -103,6 +103,12 @@ void drawHud(const ModeController& mc) {
     std::snprintf(buf, sizeof(buf), "%d", board.linesCleared());
     DrawText(buf, x, 282, 26, rl(kColWhite));
 
+    // Combo indicator (only while an active combo run is going).
+    if (board.combo() > 1) {
+        std::snprintf(buf, sizeof(buf), "COMBO x%d", board.combo());
+        DrawText(buf, x, 340, 24, rl(kColYellow));
+    }
+
     DrawText("Move  <- ->", x, 470, 16, rl(kColGray));
     DrawText("Rotate  Z / X", x, 490, 16, rl(kColGray));
     DrawText("Soft drop  v", x, 510, 16, rl(kColGray));

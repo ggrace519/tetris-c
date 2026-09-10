@@ -21,7 +21,9 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
       Core: Board::step(dt) drives gravity + a 0.5s lock delay with move/rotate
       reset (hard drop bypasses). App: DAS 167ms / ARR 33ms horizontal auto-shift
       + SOCD (last-pressed wins), soft drop ~20 rows/s. Core tests +7 (lock delay).
-- [ ] Combo tracking (`innovation/combos` @ 12dd321)
+- [x] Combo tracking (`innovation/combos` @ 12dd321) ✅
+      Core: consecutive line-clearing locks increment combo; bonus = combo*50*level;
+      a no-clear lock resets it. maxCombo tracked. HUD shows COMBO xN. +5 tests.
 - [ ] Hard-drop animation (`innovation/drop-animation` @ 9d9054a)
 
 ### Tier 3 — Polish + persistence

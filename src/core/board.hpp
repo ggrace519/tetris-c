@@ -31,6 +31,8 @@ public:
     long score() const { return score_; }
     int level() const { return level_; }
     int linesCleared() const { return linesTotal_; }
+    int combo() const { return combo_; }         // current consecutive-clear run
+    int maxCombo() const { return maxCombo_; }
     double fallSpeed() const { return fallSpeed_; }
     bool gameOver() const { return gameOver_; }
 
@@ -92,6 +94,8 @@ private:
     long score_ = 0;
     int linesTotal_ = 0;
     int level_ = 1;
+    int combo_ = 0;
+    int maxCombo_ = 0;
     double fallSpeed_ = kStartFallSpeed;
     bool gameOver_ = false;
     Piece current_{ShapeId::I};
