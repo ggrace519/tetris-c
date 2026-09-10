@@ -434,3 +434,7 @@ build/external/
 
 # Loose object files (e.g. from tests.mk)
 *.o
+
+# Claude Code session-local state (loop handoff snapshots, per-session settings).
+# Not part of the project; regenerated per session.
+.claude/

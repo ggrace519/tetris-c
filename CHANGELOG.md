@@ -8,8 +8,8 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 - **Complete playable game (all three tiers).** A C++/raylib Tetris with feature
-  parity to `python-tetris`, on a raylib-free pure-logic core (80 headless test
-  cases / 336 assertions) plus a thin raylib app layer, running at 60 FPS:
+  parity to `python-tetris`, on a raylib-free pure-logic core (88 headless test
+  cases / 362 assertions) plus a thin raylib app layer, running at 60 FPS:
   - **Tier 1:** 10×20 board, 7-bag randomizer, simplified-SRS wall kicks, ghost
     piece, next preview, soft/hard drop, classic scoring, level/speed progression,
     pause/restart/game-over.
@@ -39,6 +39,16 @@ All notable changes to this project are documented here. Format follows
   for cross-checking and the optional future SRS upgrade.
 
 ### Infrastructure
+- **Continuous integration** (`.github/workflows/ci.yml`): every push/PR to
+  `develop`/`main` runs a `test` job (headless doctest suite + a gcov coverage
+  report, no raylib — the PR gate) and a `build` job that compiles the full game
+  via premake5, installing raylib's Linux deps and caching the raylib source/build
+  so the fetch+compile only reruns when `premake5.lua` changes.
+- **Coverage tooling:** `make -f tests/tests.mk coverage` reports gcov line
+  coverage for our own `src/` (core `.cpp` files at 95–100%). Informational, not a
+  gate — no baseline history to threshold against yet.
+- Filled the largest coverage gap: added tests for `ModeController::reset()` and
+  post-win/post-game-over update no-ops (`modes.cpp` 79% → 95%).
 - Unified the project into a single repo: un-nested the quickstart scaffold and
   merged it with the planning docs (one `.gitignore`, one README), fresh git
   history, `develop`/`main` branch model.

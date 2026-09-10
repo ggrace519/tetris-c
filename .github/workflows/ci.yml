@@ -1,0 +1,81 @@
+name: CI
+
+# Build the raylib app and run the headless core test suite on every push and PR.
+# The two jobs are intentionally split:
+#   - `test`  compiles src/core + src/app/juice.cpp with plain g++ (NO raylib) and
+#             runs the doctest suite. Fast, no graphics stack — this is the gate.
+#   - `build` compiles the full game via the vendored premake5, which fetches and
+#             builds raylib from source, so it needs raylib's X11/GL/Wayland deps.
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR branch).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: core tests (headless, no raylib)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install compiler
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends g++ make
+
+      - name: Compiler version
+        run: g++ --version
+
+      - name: Run core tests
+        run: make -f tests/tests.mk
+
+      - name: Coverage report (informational)
+        run: make -f tests/tests.mk coverage
+
+  build:
+    name: build game (premake5 + raylib)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # raylib is built from source by the premake bootstrap; these are its
+      # Linux build dependencies (see docs research / ADR-0003). raylib is NOT
+      # available as an apt package on Debian/Ubuntu, so it must be compiled.
+      - name: Install raylib build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev \
+            libxinerama-dev libwayland-dev libxkbcommon-dev
+
+      # premake5 downloads raylib master as a zip and compiles it under
+      # build/external/raylib-master (gitignored). Cache that tree so the fetch
+      # + raylib compile only reruns when the premake config changes.
+      - name: Cache raylib source + build
+        uses: actions/cache@v4
+        with:
+          path: build/external
+          key: raylib-${{ runner.os }}-${{ hashFiles('build/premake5.lua') }}
+
+      - name: Generate makefiles
+        working-directory: build
+        run: ./premake5 gmake
+
+      - name: Build (Debug)
+        run: make
+
+      - name: Verify the game binary was produced
+        run: |
+          # premake names the binary after the checkout dir (repo name on CI =
+          # "tetris-c"), so locate it rather than hard-coding that name. Exactly
+          # one non-library executable should exist under bin/Debug.
+          bin="$(find bin/Debug -maxdepth 1 -type f -executable ! -name '*.a' ! -name '*.o' | head -1)"
+          echo "Built: ${bin:-<none>}"
+          test -n "$bin"
+          file "$bin"
