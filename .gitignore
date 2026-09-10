@@ -417,6 +417,7 @@ build/external/
 # Runtime-generated persistence (Tier 3)
 /settings.json
 /highscores.json
+/highscores.dat
 *.sav
 
 # Coverage output (make coverage)

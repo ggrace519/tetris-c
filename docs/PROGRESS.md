@@ -39,7 +39,12 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
       simplified detector (not guideline SRS) per the parity scope.
 - [ ] Juice: shake/particles (`innovation/juice` @ 0cab591)
 - [ ] Heuristic AI (`innovation/ai` @ d285bb9)
-- [ ] Settings + high-score persistence; rebindable keys
+- [x] High-score persistence ✅
+      Core HighScores (per-mode best score + Sprint best time) serialized to
+      highscores.dat; loaded on start, submitted+saved on game end. Verified by a
+      CROSS-PROCESS round-trip (write in one process, read in another). HUD + menu
+      show BEST. +6 tests.
+- [ ] (optional) rebindable keys / settings screen
 
 ## Commands
 - Build game: `cd build && ./premake5 gmake && cd .. && make` → `bin/Debug/tetris-c`

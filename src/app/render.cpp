@@ -159,12 +159,24 @@ void drawCenterMessage(const char* title, const char* subtitle) {
 
 }  // namespace
 
-void drawFrame(const ModeController& mc, Screen screen) {
+void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best) {
     const Board& board = mc.board();
     ClearBackground(rl(kColDarkBg));
     drawPlayfield(board);
     drawNextPreview(board);
     drawHud(mc);
+
+    // BEST line under the score panel.
+    {
+        char buf[64];
+        const int x = kPlayW + 20;
+        if (mc.mode() == GameMode::Sprint && best.hasTime) {
+            std::snprintf(buf, sizeof(buf), "BEST %.1fs", best.bestTime);
+        } else {
+            std::snprintf(buf, sizeof(buf), "BEST %ld", best.bestScore);
+        }
+        DrawText(buf, x, 155, 16, rl(kColGray));
+    }
 
     if (screen == Screen::Paused) {
         drawCenterMessage("PAUSED", "Press P to resume");
@@ -175,7 +187,7 @@ void drawFrame(const ModeController& mc, Screen screen) {
     }
 }
 
-void drawMenu(int modeSel, int diffSel) {
+void drawMenu(int modeSel, int diffSel, const ModeRecord& best) {
     static const char* kModes[] = {"MARATHON", "SPRINT", "ULTRA"};
     static const char* kDiffs[] = {"EASY", "NORMAL", "HARD", "EXPERT"};
 
@@ -200,6 +212,17 @@ void drawMenu(int modeSel, int diffSel) {
                  rl(sel ? kColYellow : kColWhite));
     }
     DrawText("(difficulty affects Ultra garbage speed)", 60, 390, 14, rl(kColGray));
+
+    // Best for the highlighted mode.
+    {
+        char buf[64];
+        if (modeSel == 1 && best.hasTime) {  // Sprint → best time
+            std::snprintf(buf, sizeof(buf), "Best time: %.1fs", best.bestTime);
+        } else {
+            std::snprintf(buf, sizeof(buf), "Best score: %ld", best.bestScore);
+        }
+        DrawText(buf, 60, 425, 18, rl(kColCyan));
+    }
 
     DrawText("Press ENTER or SPACE to start", 60, 470, 22, rl(kColGreen));
     DrawText("Esc to quit", 60, 505, 16, rl(kColGray));

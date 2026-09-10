@@ -4,6 +4,7 @@
 #define TETRIS_APP_RENDER_HPP
 
 #include "core/board.hpp"
+#include "core/highscores.hpp"
 #include "core/modes.hpp"
 
 namespace tetris {
@@ -18,13 +19,14 @@ inline constexpr int kWinH = kPlayH;
 
 enum class Screen { Menu, Playing, Paused, GameOver, Won };
 
-// Draw the in-game frame for the given controller + screen state. Call between
+// Draw the in-game frame for the given controller + screen state. `best` is the
+// stored record for the current mode (for the BEST line). Call between
 // BeginDrawing/EndDrawing.
-void drawFrame(const ModeController& mc, Screen screen);
+void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best);
 
-// Draw the start menu (mode + difficulty selection). `modeSel`/`diffSel` are the
-// currently highlighted indices.
-void drawMenu(int modeSel, int diffSel);
+// Draw the start menu (mode + difficulty selection) with the highlighted mode's
+// stored best. `modeSel`/`diffSel` are the currently highlighted indices.
+void drawMenu(int modeSel, int diffSel, const ModeRecord& best);
 
 }  // namespace tetris
 

@@ -10,6 +10,18 @@ Game::Game() {
     SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(kWinW, kWinH, "tetris-c");
     SetTargetFPS(60);
+
+    // High-score file next to the executable's working dir.
+    savePath_ = "highscores.dat";
+    highScores_.load(savePath_);
+}
+
+void Game::recordResult() {
+    if (resultRecorded_ || !mc_) return;
+    resultRecorded_ = true;
+    const bool cleared = mc_->won();
+    highScores_.submit(mc_->mode(), mc_->board().score(), mc_->elapsed(), cleared);
+    highScores_.save(savePath_);  // persist immediately
 }
 
 void Game::startSelectedMode() {
@@ -23,6 +35,7 @@ void Game::startSelectedMode() {
     dasTimer_ = 0.0;
     arrTimer_ = 0.0;
     softDropTimer_ = 0.0;
+    resultRecorded_ = false;
 }
 
 void Game::processMenuInput() {
@@ -58,7 +71,10 @@ void Game::processPlayInput() {
     // Hard drop — edge-triggered.
     if (IsKeyPressed(KEY_SPACE)) board.hardDrop();
 
-    if (board.gameOver()) screen_ = Screen::GameOver;
+    if (board.gameOver()) {
+        screen_ = Screen::GameOver;
+        recordResult();
+    }
 }
 
 void Game::handleHorizontal(double dt) {
@@ -131,8 +147,13 @@ void Game::updateGravity(float dt) {
     // Advance mode timers (Ultra garbage, win checks).
     mc_->update(dt);
 
-    if (board.gameOver()) screen_ = Screen::GameOver;
-    else if (mc_->won()) screen_ = Screen::Won;
+    if (board.gameOver()) {
+        screen_ = Screen::GameOver;
+        recordResult();
+    } else if (mc_->won()) {
+        screen_ = Screen::Won;
+        recordResult();
+    }
 }
 
 void Game::run() {
@@ -148,9 +169,10 @@ void Game::run() {
 
         BeginDrawing();
         if (screen_ == Screen::Menu || !mc_) {
-            drawMenu(modeSel_, diffSel_);
+            const GameMode m = static_cast<GameMode>(modeSel_);
+            drawMenu(modeSel_, diffSel_, highScores_.record(m));
         } else {
-            drawFrame(*mc_, screen_);
+            drawFrame(*mc_, screen_, highScores_.record(mc_->mode()));
         }
         EndDrawing();
     }

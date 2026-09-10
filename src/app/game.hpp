@@ -5,7 +5,10 @@
 
 #include <memory>
 
+#include <string>
+
 #include "app/render.hpp"
+#include "core/highscores.hpp"
 #include "core/modes.hpp"
 
 namespace tetris {
@@ -20,12 +23,16 @@ private:
     void processPlayInput();
     void updateGravity(float dt);
     void startSelectedMode();
+    void recordResult();  // submit current run to high scores + save (once per end)
 
     Screen screen_ = Screen::Menu;
     int modeSel_ = 0;  // 0..2  Marathon/Sprint/Ultra
     int diffSel_ = 1;  // 0..3  Easy/Normal/Hard/Expert
 
     std::unique_ptr<ModeController> mc_;  // created when a mode starts
+    HighScores highScores_;
+    std::string savePath_;
+    bool resultRecorded_ = false;  // guards recordResult() to once per game end
 
     // DAS/ARR horizontal auto-shift state.
     int dasDir_ = 0;         // -1 left, +1 right, 0 none (last resolved direction)
