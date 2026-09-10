@@ -26,28 +26,31 @@ and audio live in a thin raylib `app` layer.
 
 ## Status
 
-**Planning complete + raylib scaffold in place; game code not written.** The
-project is scaffolded from **raylib-quickstart** (premake5 → make, raylib
-vendored). A working `bin/Debug/libraylib.a` is already built. `src/main.c` is
-still the quickstart template — our game code replaces it.
+**Tier 1 complete — playable.** Pure-logic core (all rules) + raylib app (window,
+60 FPS loop, input, rendering) are implemented and verified: 21 core test cases
+pass headlessly and the game runs at 60 FPS. Tier 2 (modes, DAS/ARR, lock delay,
+combos, drop animation) is in progress — see `docs/PROGRESS.md`.
 
 ## Commands
 
-The raylib build (premake5 → make) is real and works. The **test** target and the
-game's own sources do **not exist yet** — those commands are marked planned.
+Both the game build and the tests are real and pass.
 
 ```bash
-# Build raylib + the app (works today; produces bin/Debug/<project>)
+# Build raylib + the game → bin/Debug/tetris-c
 cd build && ./premake5 gmake && cd ..   # regenerate makefiles after premake5.lua edits
 make
 
-# Run (once our code replaces the template main)
+# Run the game
 ./bin/Debug/tetris-c
 
-# (planned) build + run headless core tests — needs the tests target added to
-# build/premake5.lua and tests/ written. Mark verified only after it runs.
-make test
+# Build + run the headless core tests (doctest; NO raylib)
+make -f tests/tests.mk
 ```
+
+> The core tests use a standalone `tests/tests.mk`, NOT a premake target — the
+> top-level `Makefile` is premake-generated and gitignored, so a hand-added
+> `make test` rule there would be clobbered on the next `premake5 gmake`.
+> `make clean && make` if an incremental build complains about a stale object.
 
 - **No `apt install` for raylib** — Debian 13 does not package raylib; the
   quickstart vendors and builds it (DECISIONS ADR-0003). Don't add `libraylib-dev`

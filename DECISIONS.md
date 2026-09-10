@@ -120,7 +120,8 @@ research file so the upgrade needs no re-derivation.
 
 ## ADR-0005 — Test framework: doctest (single-header)
 
-**Date:** 2026-09-10 · **Status:** Proposed (pending first test run)
+**Date:** 2026-09-10 · **Status:** Accepted (first test run passed: 21 cases /
+127 assertions, 2026-09-10)
 
 **Context.** doctest, Catch2, and gtest are all in Debian apt (doctest 2.4.11,
 Catch2 3.7.1, gtest 1.16). The core is pure C++ with simple assertions; compile
@@ -131,6 +132,7 @@ speed and zero setup matter for a solo project.
 only; the app layer is verified by running the real game.
 
 **Consequences.**
-- No test-framework install step; `make test` builds and runs core tests.
-- Status stays **Proposed** until the first `make test` actually runs and passes
-  (Greg's rule: a documented command that hasn't run is not verified).
+- No test-framework install step; `make -f tests/tests.mk` builds and runs the
+  core tests (a standalone makefile, not a premake target — the top-level
+  `Makefile` is generated and gitignored).
+- Verified: the first run passed (21 cases / 127 assertions), so this is Accepted.
