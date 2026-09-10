@@ -327,6 +327,13 @@ and re-check before porting, as they may advance):
 | juice (shake/particles) | `innovation/juice` | `0cab591` | 3 |
 | heuristic AI | `innovation/ai` | `d285bb9` | 3 |
 
+> **AI design boundary (not a bug):** `TetrisAI::bestMove` searches rotation ×
+> column with a straight vertical drop. Tuck/slide placements (moving a piece
+> sideways *under* an overhang after it has dropped) are therefore unreachable by
+> the AI — the same limitation as python-tetris's AI. This is an intentional scope
+> boundary, not a defect; a fuller search (BFS over reachable resting states)
+> would be a future enhancement, not parity work.
+
 > The port source was read on `innovation/modes` (which contains `modes.py`). Note
 > local `main` (`6224714`) was **ahead of** `origin/main` (`1e2c204`) and not
 > fetched — treat remote state as unverified until a `git fetch`.
