@@ -31,7 +31,7 @@ input, and audio live in an `app` layer that depends on `core` and on raylib.
 
 ---
 
-## ADR-0002 — Language C++17; build via the raylib-quickstart scaffold (premake5 → make)
+## ADR-0002 — Language C++20; build via the raylib-quickstart scaffold (premake5 → make)
 
 **Date:** 2026-09-10 · **Status:** Accepted (supersedes the original
 "hand-written Makefile" decision)
@@ -43,7 +43,7 @@ template (raylib-extras, CC0), which vendors raylib and drives the build with a
 bundled **premake5** that generates makefiles. A working `libraylib.a` is already
 built under `bin/Debug/`.
 
-**Decision.** Use **C++17**, and adopt the **quickstart's premake5 → make build**
+**Decision.** Use **C++20**, and adopt the **quickstart's premake5 → make build**
 rather than hand-rolling a Makefile or introducing CMake. premake5 ships in the
 repo (`build/premake5`), so there is no build-tool install step. Game sources are
 `.cpp` (the template's `src/main.c` is replaced by our code).

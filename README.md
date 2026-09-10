@@ -6,7 +6,7 @@ template (raylib is vendored and built locally — no system install). A
 feature-parity port of the sibling [`python-tetris`](../python-tetris) project,
 with all game rules in a pure-logic core that is unit-tested headlessly.
 
-> **Language note:** the directory is named `tetris-c`, but this is a **C++17**
+> **Language note:** the directory is named `tetris-c`, but this is a **C++20**
 > project, not C (see [DECISIONS.md](DECISIONS.md), ADR-0002).
 
 ## Status

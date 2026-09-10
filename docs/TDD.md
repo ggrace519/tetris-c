@@ -25,7 +25,7 @@ directly without a window.
         └───────────────────┬──────────────────────┘
                             │  depends on ↓ (one way only)
         ┌───────────────────▼──────────────────────┐
-        │  core/ (pure C++17, no external deps)      │
+        │  core/ (pure C++20, no external deps)      │
         │  grid · piece · rules · scoring · modes     │
         └───────────────────▲──────────────────────┘
                             │  drives directly
@@ -255,7 +255,7 @@ make                                     # build the game → bin/Debug/tetris-c
   is raylib-free, so tests build and run headlessly). Add a `make test`-style
   target (a premake config or a thin top-level `make` rule) that builds and runs it.
 
-Standard flags: `-std=c++17 -Wall -Wextra`; coverage via `--coverage` for the
+Standard flags: `-std=c++20 -Wall -Wextra`; coverage via `--coverage` for the
 `coverage` target.
 
 **raylib link libraries** (the quickstart's generated makefiles already supply

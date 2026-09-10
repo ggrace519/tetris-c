@@ -5,7 +5,7 @@ planning docs before writing code.
 
 ## Project
 
-**tetris-c** — a **C++17** Tetris for Linux rendered with **raylib**. It is a
+**tetris-c** — a **C++20** Tetris for Linux rendered with **raylib**. It is a
 **feature-parity port of the sibling `../python-tetris`** project. All game rules
 live in a pure-logic `core` with zero rendering/OS dependency; rendering, input,
 and audio live in a thin raylib `app` layer.
