@@ -74,9 +74,12 @@ int TetrisAI::bumpiness(const Grid& grid) {
     return b;
 }
 
-double TetrisAI::evaluate(const Grid& grid) {
-    return kWAggregate * aggregateHeight(grid) + kWComplete * completeLines(grid) +
-           kWHoles * holes(grid) + kWBumpiness * bumpiness(grid);
+double TetrisAI::evaluate(const Grid& postClearGrid, int linesCleared) {
+    // The grid is post-clear, so completeLines(postClearGrid) is ~0; the reward for
+    // clearing comes from the explicit linesCleared argument (Seki's intent).
+    return kWAggregate * aggregateHeight(postClearGrid) +
+           kWComplete * linesCleared + kWHoles * holes(postClearGrid) +
+           kWBumpiness * bumpiness(postClearGrid);
 }
 
 bool TetrisAI::columnFits(const Grid& grid, const Piece& piece, int x, int rotation) {
@@ -93,7 +96,8 @@ bool TetrisAI::columnFits(const Grid& grid, const Piece& piece, int x, int rotat
     return true;
 }
 
-Grid TetrisAI::simulateDrop(const Grid& grid, const Piece& piece, int x, int rotation) {
+TetrisAI::DropResult TetrisAI::simulateDrop(const Grid& grid, const Piece& piece,
+                                            int x, int rotation) {
     // Drop the piece straight down until it would collide, then lock it.
     auto collidesAt = [&](int py) {
         for (const Cell& c : piece.cellsAt(x, py, rotation)) {
@@ -124,7 +128,8 @@ Grid TetrisAI::simulateDrop(const Grid& grid, const Piece& piece, int x, int rot
         }
         if (!full) { cleared[writeRow] = out[r]; --writeRow; }
     }
-    return cleared;
+    const int clearedCount = writeRow + 1;  // rows removed
+    return DropResult{cleared, clearedCount};
 }
 
 AiMove TetrisAI::bestMove(const Grid& grid, const Piece& piece) {
@@ -144,8 +149,8 @@ AiMove TetrisAI::bestMove(const Grid& grid, const Piece& piece) {
         for (int x = -minDx; x <= kCols - 1 - maxDx; ++x) {
             if (!columnFits(grid, probe, x, rot)) continue;
             legal.push_back(AiMove{x, rot, true});
-            const Grid sim = simulateDrop(grid, probe, x, rot);
-            const double score = evaluate(sim);
+            const DropResult sim = simulateDrop(grid, probe, x, rot);
+            const double score = evaluate(sim.grid, sim.cleared);
             if (score > bestScore) {
                 bestScore = score;
                 best = AiMove{x, rot, true};

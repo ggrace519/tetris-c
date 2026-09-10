@@ -26,7 +26,10 @@ public:
     double errorRate() const { return errorRate_; }
 
     // Evaluate a grid with the four weighted heuristics (higher = better).
-    static double evaluate(const Grid& grid);
+    // `linesCleared` is the number of rows the placement cleared — the reward term
+    // (kWComplete) needs this because the grid passed in is already post-clear, so
+    // completeLines() on it would always be 0.
+    static double evaluate(const Grid& postClearGrid, int linesCleared);
 
     // Individual heuristics (exposed for testing).
     static int aggregateHeight(const Grid& grid);
@@ -34,14 +37,21 @@ public:
     static int holes(const Grid& grid);
     static int bumpiness(const Grid& grid);
 
+    // Result of dropping a piece: the resulting (post-clear) grid + rows cleared.
+    struct DropResult {
+        Grid grid;
+        int cleared;
+    };
+
     // Choose the best placement for `piece` on `grid`. With the difficulty's error
     // rate, occasionally returns a random legal move instead. Uses the AI's RNG.
     AiMove bestMove(const Grid& grid, const Piece& piece);
 
 private:
     // Simulate dropping the piece at (x, rotation) onto a copy of grid, clear full
-    // rows, and return the resulting grid. Assumes the placement column is legal.
-    static Grid simulateDrop(const Grid& grid, const Piece& piece, int x, int rotation);
+    // rows, and return the resulting grid + how many rows were cleared. Assumes the
+    // placement column is legal.
+    static DropResult simulateDrop(const Grid& grid, const Piece& piece, int x, int rotation);
     static bool columnFits(const Grid& grid, const Piece& piece, int x, int rotation);
 
     Difficulty diff_;

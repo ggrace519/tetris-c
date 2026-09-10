@@ -47,8 +47,31 @@ TEST_CASE("evaluate uses the Seki weights (holes hurt the score)") {
     Grid flat = emptyGrid();
     Grid withHole = emptyGrid();
     withHole[kRows - 2][0] = ShapeId::I;  // creates a hole + height + bumpiness
-    // A board with a hole should score strictly worse than the empty board.
-    CHECK(TetrisAI::evaluate(withHole) < TetrisAI::evaluate(flat));
+    // A board with a hole should score strictly worse than the empty board (0 clears).
+    CHECK(TetrisAI::evaluate(withHole, 0) < TetrisAI::evaluate(flat, 0));
+}
+
+TEST_CASE("evaluate rewards line clears via the linesCleared argument") {
+    // Same (post-clear) grid, different cleared counts → more clears scores higher.
+    Grid g = emptyGrid();
+    CHECK(TetrisAI::evaluate(g, 1) > TetrisAI::evaluate(g, 0));
+    CHECK(TetrisAI::evaluate(g, 4) > TetrisAI::evaluate(g, 1));
+    // The reward is exactly kWComplete (0.76) per line on an otherwise-equal grid.
+    CHECK(TetrisAI::evaluate(g, 1) - TetrisAI::evaluate(g, 0) == doctest::Approx(0.76));
+}
+
+TEST_CASE("bestMove prefers a line-completing placement over a non-completing one") {
+    // Bottom row filled except column 0. An I piece dropped vertically into col 0
+    // completes the line; any other placement does not. The AI must pick col 0.
+    Grid g = emptyGrid();
+    for (int c = 1; c < kCols; ++c) g[kRows - 1][c] = ShapeId::J;
+    TetrisAI ai(Difficulty::Expert, 3);  // no error → deterministic best
+    Piece i(ShapeId::I);
+    AiMove m = ai.bestMove(g, i);
+    REQUIRE(m.valid);
+    bool touchesCol0 = false;
+    for (const Cell& c : i.cellsAt(m.x, 0, m.rotation)) if (c.x == 0) touchesCol0 = true;
+    CHECK(touchesCol0);
 }
 
 TEST_CASE("difficulty sets error rate and decision delay (Seki values)") {
