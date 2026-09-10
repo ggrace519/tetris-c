@@ -63,24 +63,42 @@ TEST_CASE("mini T-spin: exactly 2 corners blocked with a spin") {
     CHECK(b.lastTSpin() == Board::TSpin::Mini);
 }
 
-TEST_CASE("wall counts as a blocked corner") {
+TEST_CASE("floor counts as a blocked corner") {
     Board b(5);
-    // Put the T against the left wall so its left corners are out of bounds.
-    const int x = -1, y = kRows - 3;  // left corners at col -1 (blocked = wall)
-    // That's 2 corners (top-left, bottom-left) blocked by the wall; add one more.
-    b.setCellForTest(x + 2, y, ShapeId::I);  // top-right
-    Piece t = placed(ShapeId::T, x, y, 2);
-    t.setSpin(Cell{1, 0});
-    // T at x=-1 must not itself collide; rot 2 (pointing up) cells are within cols 0..2.
-    // (T rot2 cells: (0,1),(1,1),(2,1),(1,2) → at x=-1: cols -1..1; the -1 col cell...)
-    // To keep it valid, use a rotation whose cells stay in-bounds at x=-1: not all do.
-    // Instead verify detection via corner count directly using an in-bounds T with a
-    // wall-adjacent hole is complex; here we just assert >=3 blocked → Full.
-    // Guard: only assert if the piece is a legal placement.
-    if (!b.collides(t)) {
-        b.lock();
-        CHECK(b.lastTSpin() == Board::TSpin::Full);  // 2 wall + 1 filled = 3
+    // T rotation 0 cells: (x+1,y),(x,y+1),(x+1,y+1),(x+2,y+1) — flat bottom at y+1.
+    // Place at y=kRows-2 so the piece rests on the floor (y+1 == last row). The two
+    // bottom corners {x,y+2},{x+2,y+2} are then at row kRows → off-field (blocked).
+    const int x = 3, y = kRows - 2;
+    b.setCellForTest(x, y, ShapeId::I);  // top-left corner filled → 3rd blocked corner
+    Piece t = placed(ShapeId::T, x, y, 0);
+    t.setSpin(Cell{-1, 0});
+    b.setActiveForTest(t);         // make it the active piece (was missing!)
+    REQUIRE_FALSE(b.collides(b.current()));  // legal placement (asserts the test is real)
+    REQUIRE(b.current().hasSpin());
+    b.lock();
+    CHECK(b.lastTSpin() == Board::TSpin::Full);  // 2 floor corners + 1 filled = 3
+}
+
+TEST_CASE("REGRESSION: a T that merely FELL (gravity) into a blocked slot is not a T-spin") {
+    Board b(99);
+    const int x = 3;
+    const int landY = kRows - 3;
+    // Blocked slot: 3 corners around the resting position.
+    b.setCellForTest(x, landY, ShapeId::I);
+    b.setCellForTest(x + 2, landY, ShapeId::I);
+    b.setCellForTest(x, landY + 2, ShapeId::I);
+    // Start a T high, rotate it (sets the spin flag), then let gravity carry it down.
+    Piece t = placed(ShapeId::T, x, 0, 2);
+    b.setActiveForTest(t);
+    b.rotate(1); b.rotate(-1);              // player rotation → spin flag set
+    REQUIRE(b.current().hasSpin());
+    // Gravity descent must clear the spin so this is NOT a free T-spin.
+    bool locked = false;
+    for (int i = 0; i < 60 && !locked && !b.gameOver(); ++i) {
+        locked = b.step(b.fallSpeed());
     }
+    REQUIRE(locked);
+    CHECK(b.lastTSpin() == Board::TSpin::None);
 }
 
 TEST_CASE("T-spin single awards the T-spin bonus on top of the line score") {

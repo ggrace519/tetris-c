@@ -173,3 +173,12 @@ kick-point upgrade) but it is self-consistent and matches the parity target.
   captured in `~/.claude/research/tetris-guideline.md`.
 - Back-to-back / guideline B2B multiplier is **not** part of python-tetris's
   branch, so it is out of scope here (would arrive only with a guideline pass).
+
+**Amendment (2026-09-10):** python-tetris never clears `spin_axis` on a
+translation, only on spawn. Ported literally, that let a T which merely **fell**
+(gravity) into a blocked slot score a free T-spin with no player input — a
+scoring bug that fires automatically (verified, then regression-tested). Fixed by
+clearing the spin flag on the **gravity-driven** downward move in `step()` only —
+a **player** soft-drop still preserves it, and a hard drop (which never rotates)
+after a spin still counts. This is stricter than python-tetris but kills the free
+bonus while keeping the intended feel.

@@ -199,6 +199,10 @@ bool Board::step(double dt) {
         if (gravityTimer_ >= fallSpeed_) {
             gravityTimer_ = 0.0;
             move(0, 1);  // guaranteed to succeed (not resting)
+            // Gravity descent is not a spin: clear the flag so a T that merely
+            // FELL into a blocked slot doesn't score a free T-spin (a player
+            // rotation right before lock still counts). Amends ADR-0006.
+            current_.clearSpin();
         }
         return false;
     }
