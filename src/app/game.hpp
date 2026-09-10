@@ -26,8 +26,17 @@ private:
     int diffSel_ = 1;  // 0..3  Easy/Normal/Hard/Expert
 
     std::unique_ptr<ModeController> mc_;  // created when a mode starts
-    double fallTimer_ = 0.0;
+
+    // DAS/ARR horizontal auto-shift state.
+    int dasDir_ = 0;         // -1 left, +1 right, 0 none (last resolved direction)
+    double dasTimer_ = 0.0;  // time the current direction has been held
+    double arrTimer_ = 0.0;  // accumulator for repeat firing
+    double softDropTimer_ = 0.0;  // soft-drop cadence accumulator
+    void handleHorizontal(double dt);  // applies DAS/ARR + SOCD moves
 };
+
+// Soft drop: ~20 rows/second while Down is held (a common feel value).
+inline constexpr double kSoftDropInterval = 1.0 / 20.0;
 
 }  // namespace tetris
 

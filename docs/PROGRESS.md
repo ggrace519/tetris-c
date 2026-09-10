@@ -17,7 +17,10 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
       Core `ModeController` + `Board::injectGarbage` (fixes the dead Python Ultra
       mechanic). Start menu (mode + difficulty select) makes them reachable —
       menu render verified by screenshot. Core tests +13 (garbage + modes).
-- [ ] DAS/ARR + lock delay (`innovation/das-lock-delay` @ 4e91423)
+- [x] DAS/ARR + lock delay (`innovation/das-lock-delay` @ 4e91423) ✅
+      Core: Board::step(dt) drives gravity + a 0.5s lock delay with move/rotate
+      reset (hard drop bypasses). App: DAS 167ms / ARR 33ms horizontal auto-shift
+      + SOCD (last-pressed wins), soft drop ~20 rows/s. Core tests +7 (lock delay).
 - [ ] Combo tracking (`innovation/combos` @ 12dd321)
 - [ ] Hard-drop animation (`innovation/drop-animation` @ 9d9054a)
 

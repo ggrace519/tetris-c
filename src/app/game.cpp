@@ -19,7 +19,10 @@ void Game::startSelectedMode() {
     const std::uint64_t seed = std::random_device{}();
     mc_ = std::make_unique<ModeController>(mode, diff, seed);
     screen_ = Screen::Playing;
-    fallTimer_ = 0.0;
+    dasDir_ = 0;
+    dasTimer_ = 0.0;
+    arrTimer_ = 0.0;
+    softDropTimer_ = 0.0;
 }
 
 void Game::processMenuInput() {
@@ -49,30 +52,74 @@ void Game::processPlayInput() {
     if (screen_ != Screen::Playing) return;
 
     Board& board = mc_->board();
-    if (IsKeyPressed(KEY_LEFT)) board.move(-1, 0);
-    if (IsKeyPressed(KEY_RIGHT)) board.move(1, 0);
-    if (IsKeyPressed(KEY_DOWN)) {
-        if (board.move(0, 1)) fallTimer_ = 0.0;
-    }
+    // Rotations — edge-triggered.
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_X)) board.rotate(1);
     if (IsKeyPressed(KEY_Z)) board.rotate(-1);
-    if (IsKeyPressed(KEY_SPACE)) {
-        board.hardDrop();
-        fallTimer_ = 0.0;
-    }
+    // Hard drop — edge-triggered.
+    if (IsKeyPressed(KEY_SPACE)) board.hardDrop();
 
     if (board.gameOver()) screen_ = Screen::GameOver;
+}
+
+void Game::handleHorizontal(double dt) {
+    Board& board = mc_->board();
+    const bool left = IsKeyDown(KEY_LEFT);
+    const bool right = IsKeyDown(KEY_RIGHT);
+
+    // SOCD: both held → keep the most-recently-pressed direction.
+    int dir = 0;
+    if (left && !right) dir = -1;
+    else if (right && !left) dir = 1;
+    else if (left && right) dir = (dasDir_ != 0) ? dasDir_ : -1;  // default left
+
+    if (dir == 0) {
+        dasDir_ = 0;
+        dasTimer_ = 0.0;
+        arrTimer_ = 0.0;
+        return;
+    }
+
+    if (dir != dasDir_) {
+        // New direction (or first press): move once immediately, then start DAS.
+        dasDir_ = dir;
+        dasTimer_ = 0.0;
+        arrTimer_ = 0.0;
+        board.move(dir, 0);
+        return;
+    }
+
+    // Same direction held: after DAS, repeat every ARR.
+    dasTimer_ += dt;
+    if (dasTimer_ >= kDasSeconds) {
+        arrTimer_ += dt;
+        while (arrTimer_ >= kArrSeconds) {
+            arrTimer_ -= kArrSeconds;
+            board.move(dir, 0);
+        }
+    }
 }
 
 void Game::updateGravity(float dt) {
     if (screen_ != Screen::Playing) return;
 
     Board& board = mc_->board();
-    fallTimer_ += dt;
-    if (fallTimer_ >= board.fallSpeed()) {
-        fallTimer_ = 0.0;
-        if (!board.move(0, 1)) board.lock();
+    handleHorizontal(dt);
+
+    // Soft drop: while Down is held, step at a faster cadence (kSoftDropRate rows/s)
+    // in addition to gravity. Each extra move resets the gravity timer inside step
+    // via move()'s lock-delay reset; the piece still respects lock delay at the bottom.
+    if (IsKeyDown(KEY_DOWN)) {
+        softDropTimer_ += dt;
+        while (softDropTimer_ >= kSoftDropInterval) {
+            softDropTimer_ -= kSoftDropInterval;
+            board.move(0, 1);  // no-op if resting; lock delay still applies via step()
+        }
+    } else {
+        softDropTimer_ = 0.0;
     }
+
+    // Gravity + lock delay handled by the core step().
+    board.step(dt);
     // Advance mode timers (Ultra garbage, win checks).
     mc_->update(dt);
 

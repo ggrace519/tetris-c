@@ -40,10 +40,22 @@ public:
     bool collides(const Piece& p) const { return collides(p, p.x(), p.y(), p.rotation()); }
 
     // Move active piece by (dx, dy) if the destination is valid. Returns success.
+    // A successful move resets the lock-delay timer (move reset).
     bool move(int dx, int dy);
 
     // Rotate active piece (+1 CW, -1 CCW) trying the kick table. Returns success.
+    // A successful rotation resets the lock-delay timer (rotate reset).
     bool rotate(int direction);
+
+    // Advance gravity + lock delay by dt seconds. Applies gravity every fallSpeed
+    // seconds; when the piece rests on the stack, runs a lock-delay timer that
+    // move()/rotate() reset. Locks the piece when the timer expires. Returns true
+    // if a piece locked this call. This is the single time-stepped entry point the
+    // app calls each frame (replaces manual move(0,1)/lock()).
+    bool step(double dt);
+
+    // Is the active piece currently resting (lock-delay running)?
+    bool landed() const { return landed_; }
 
     // Drop active piece to landing row, score the distance, and lock.
     void hardDrop();
@@ -84,6 +96,13 @@ private:
     bool gameOver_ = false;
     Piece current_{ShapeId::I};
     Piece next_{ShapeId::I};
+
+    // Timing state for step()/lock delay.
+    double gravityTimer_ = 0.0;
+    double lockTimer_ = 0.0;
+    bool landed_ = false;
+
+    void resetLockDelay();
 };
 
 }  // namespace tetris

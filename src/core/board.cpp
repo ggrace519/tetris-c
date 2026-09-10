@@ -15,9 +15,19 @@ void Board::reset() {
     level_ = 1;
     fallSpeed_ = kStartFallSpeed;
     gameOver_ = false;
+    gravityTimer_ = 0.0;
+    lockTimer_ = 0.0;
+    landed_ = false;
     current_ = nextFromBag();
     next_ = nextFromBag();
     if (collides(current_)) gameOver_ = true;
+}
+
+void Board::resetLockDelay() {
+    // Move/rotate reset: while resting, any successful move or rotate refreshes
+    // the lock timer and un-lands the piece (it may now be able to fall again).
+    lockTimer_ = 0.0;
+    landed_ = false;
 }
 
 void Board::refillBag() {
@@ -51,6 +61,7 @@ bool Board::move(int dx, int dy) {
     const int ny = current_.y() + dy;
     if (collides(current_, nx, ny, current_.rotation())) return false;
     current_.setPos(nx, ny);
+    resetLockDelay();  // move reset
     return true;
 }
 
@@ -64,6 +75,7 @@ bool Board::rotate(int direction) {
         if (!collides(current_, testX, testY, newRot)) {
             current_.setRotation(newRot);
             current_.setPos(testX, testY);
+            resetLockDelay();  // rotate reset
             return true;
         }
     }
@@ -97,7 +109,42 @@ void Board::lock() {
 
     current_ = next_;
     next_ = nextFromBag();
+    // Fresh piece: clear lock/gravity timing.
+    gravityTimer_ = 0.0;
+    lockTimer_ = 0.0;
+    landed_ = false;
     if (collides(current_)) gameOver_ = true;
+}
+
+bool Board::step(double dt) {
+    if (gameOver_) return false;
+
+    // Is the piece resting on the stack (can't move down)?
+    const bool resting = collides(current_, current_.x(), current_.y() + 1,
+                                  current_.rotation());
+
+    if (!resting) {
+        // Not landed: normal gravity. Any prior landed state is cleared.
+        landed_ = false;
+        lockTimer_ = 0.0;
+        gravityTimer_ += dt;
+        if (gravityTimer_ >= fallSpeed_) {
+            gravityTimer_ = 0.0;
+            move(0, 1);  // guaranteed to succeed (not resting)
+        }
+        return false;
+    }
+
+    // Resting: run the lock-delay timer. move()/rotate() reset it via
+    // resetLockDelay() (which also clears landed_, so we re-enter here next frame).
+    landed_ = true;
+    gravityTimer_ = 0.0;
+    lockTimer_ += dt;
+    if (lockTimer_ >= kLockDelay) {
+        lock();
+        return true;
+    }
+    return false;
 }
 
 int Board::clearLines() {

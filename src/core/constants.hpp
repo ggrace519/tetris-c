@@ -125,6 +125,11 @@ inline constexpr std::array<int, 5> kLineScores{0, 100, 300, 500, 800};
 inline constexpr int kLinesPerLevel = 10;
 inline constexpr int kHardDropPerCell = 2;  // hard_drop: distance * 2
 
+// Feel timings (settings.py on innovation/das-lock-delay).
+inline constexpr double kLockDelay = 0.5;   // seconds a landed piece waits before locking
+inline constexpr double kDasSeconds = 0.167;  // Delayed Auto Shift
+inline constexpr double kArrSeconds = 0.033;  // Auto Repeat Rate
+
 // Spawn position (settings.py Piece.__init__: x=3, y=0)
 inline constexpr int kSpawnX = 3;
 inline constexpr int kSpawnY = 0;
