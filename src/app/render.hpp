@@ -24,7 +24,7 @@ enum class Screen { Menu, Playing, Paused, GameOver, Won };
 // stored record for the current mode (for the BEST line). Call between
 // BeginDrawing/EndDrawing.
 void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
-               const Juice& juice);
+               const Juice& juice, bool aiOn);
 
 // Draw the start menu (mode + difficulty selection) with the highlighted mode's
 // stored best. `modeSel`/`diffSel` are the currently highlighted indices.

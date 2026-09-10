@@ -145,7 +145,7 @@ void drawHud(const ModeController& mc) {
     DrawText("Rotate  Z / X", x, 490, 16, rl(kColGray));
     DrawText("Soft drop  v", x, 510, 16, rl(kColGray));
     DrawText("Hard drop  SPACE", x, 530, 16, rl(kColGray));
-    DrawText("Pause P", x, 550, 16, rl(kColGray));
+    DrawText("Pause P  AI demo A", x, 550, 16, rl(kColGray));
     DrawText("Menu M  Restart R", x, 570, 16, rl(kColGray));
 }
 
@@ -172,7 +172,7 @@ void drawParticles(const Juice& juice) {
 }
 
 void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
-               const Juice& juice) {
+               const Juice& juice, bool aiOn) {
     const Board& board = mc.board();
     ClearBackground(rl(kColDarkBg));
 
@@ -196,6 +196,10 @@ void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
             std::snprintf(buf, sizeof(buf), "BEST %ld", best.bestScore);
         }
         DrawText(buf, x, 155, 16, rl(kColGray));
+    }
+
+    if (aiOn) {
+        DrawText("AI DEMO", kPlayW + 20, 340, 22, rl(kColGreen));
     }
 
     if (screen == Screen::Paused) {

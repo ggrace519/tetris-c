@@ -23,6 +23,16 @@ public:
         std::shuffle(first, last, engine_);
     }
 
+    // Uniform double in [0, 1).
+    double nextDouble() {
+        return std::uniform_real_distribution<double>(0.0, 1.0)(engine_);
+    }
+
+    // Uniform int in [0, n) (n must be > 0).
+    int nextInt(int n) {
+        return std::uniform_int_distribution<int>(0, n - 1)(engine_);
+    }
+
 private:
     std::mt19937_64 engine_;
 };

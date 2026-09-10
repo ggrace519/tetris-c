@@ -42,7 +42,13 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
       with lines + particle burst on clears), pure math unit-tested headlessly
       (juice.cpp has no raylib dep). +5 tests. Shake offsets the playfield draw;
       particles integrate with gravity and fade.
-- [ ] Heuristic AI (`innovation/ai` @ d285bb9)
+- [x] Heuristic AI (`innovation/ai` @ d285bb9) ✅
+      Core TetrisAI: Seki(2004) 4-heuristic eval (aggregate height, complete lines,
+      holes, bumpiness) over all rotation x column placements; difficulty tunes
+      error rate + decision delay. App: toggle A for AI demo/autoplay. +9 tests.
+      Verified end-to-end: expert AI placed 500 pieces w/o topping out, 198 lines.
+
+**Tier 3 COMPLETE** — T-spin, persistence, juice, AI. (rebindable keys optional.)
 - [x] High-score persistence ✅
       Core HighScores (per-mode best score + Sprint best time) serialized to
       highscores.dat; loaded on start, submitted+saved on game end. Verified by a

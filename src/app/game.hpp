@@ -9,6 +9,7 @@
 
 #include "app/juice.hpp"
 #include "app/render.hpp"
+#include "core/ai.hpp"
 #include "core/highscores.hpp"
 #include "core/modes.hpp"
 
@@ -43,6 +44,12 @@ private:
     double arrTimer_ = 0.0;  // accumulator for repeat firing
     double softDropTimer_ = 0.0;  // soft-drop cadence accumulator
     void handleHorizontal(double dt);  // applies DAS/ARR + SOCD moves
+
+    // AI autoplay / demo (toggle with A during play).
+    bool aiEnabled_ = false;
+    TetrisAI ai_;
+    double aiTimer_ = 0.0;
+    void updateAi(double dt);
 };
 
 // Soft drop: ~20 rows/second while Down is held (a common feel value).

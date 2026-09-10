@@ -36,6 +36,9 @@ void Game::startSelectedMode() {
     arrTimer_ = 0.0;
     softDropTimer_ = 0.0;
     resultRecorded_ = false;
+    aiEnabled_ = false;
+    aiTimer_ = 0.0;
+    ai_.setDifficulty(diff);  // AI skill follows the chosen difficulty
 }
 
 void Game::processMenuInput() {
@@ -63,6 +66,13 @@ void Game::processPlayInput() {
     }
 
     if (screen_ != Screen::Playing) return;
+
+    // Toggle AI autoplay / demo.
+    if (IsKeyPressed(KEY_A)) {
+        aiEnabled_ = !aiEnabled_;
+        aiTimer_ = 0.0;
+    }
+    if (aiEnabled_) return;  // AI drives; ignore manual piece input while on
 
     Board& board = mc_->board();
     // Rotations — edge-triggered.
@@ -123,11 +133,38 @@ void Game::handleHorizontal(double dt) {
     }
 }
 
+void Game::updateAi(double dt) {
+    Board& board = mc_->board();
+    if (board.animating()) return;  // wait out the hard-drop animation
+
+    aiTimer_ += dt;
+    if (aiTimer_ < ai_.decisionDelay()) return;
+    aiTimer_ = 0.0;
+
+    // Compute the target placement for the current piece and take ONE action
+    // toward it per decision tick (so the demo is watchable): align rotation,
+    // then column, then hard drop.
+    const AiMove m = ai_.bestMove(board.grid(), board.current());
+    if (!m.valid) return;
+
+    if (board.current().rotation() != m.rotation) {
+        board.rotate(1);
+        return;
+    }
+    const int dx = m.x - board.current().x();
+    if (dx != 0) {
+        board.move(dx > 0 ? 1 : -1, 0);
+        return;
+    }
+    board.hardDrop();  // aligned → drop
+}
+
 void Game::updateGravity(float dt) {
     if (screen_ != Screen::Playing) return;
 
     Board& board = mc_->board();
     const int linesBefore = board.linesCleared();
+    if (aiEnabled_) updateAi(dt);
     handleHorizontal(dt);
 
     // Soft drop: while Down is held, step at a faster cadence (kSoftDropRate rows/s)
@@ -187,7 +224,7 @@ void Game::run() {
             const GameMode m = static_cast<GameMode>(modeSel_);
             drawMenu(modeSel_, diffSel_, highScores_.record(m));
         } else {
-            drawFrame(*mc_, screen_, highScores_.record(mc_->mode()), juice_);
+            drawFrame(*mc_, screen_, highScores_.record(mc_->mode()), juice_, aiEnabled_);
         }
         EndDrawing();
     }
