@@ -1,0 +1,19 @@
+tetris-c
+Copyright (c) 2026 Greg Grace
+Licensed under the MIT License (see LICENSE).
+
+This project bundles or builds against the following third-party components,
+which retain their own licenses:
+
+  * raylib — zlib/libpng license
+    Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
+    https://www.raylib.com/
+
+  * raylib-quickstart (build scaffold: premake config, resource_dir.h,
+    and the initial project template) — CC0 1.0 Universal (public domain)
+    Jeffery Myers
+    https://github.com/raylib-extras/raylib-quickstart
+
+  * doctest (tests/doctest.h) — MIT License
+    Copyright (c) 2016-2023 Viktor Kirilov
+    https://github.com/doctest/doctest

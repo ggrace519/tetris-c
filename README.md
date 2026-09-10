@@ -71,7 +71,7 @@ tetris-c/
 
 This project is released under the [MIT License](LICENSE).
 
-Bundled third-party components keep their own licenses:
+Bundled third-party components keep their own licenses (see [NOTICE](NOTICE)):
 [raylib](https://www.raylib.com/) (zlib/libpng),
 [raylib-quickstart](https://github.com/raylib-extras/raylib-quickstart) scaffold
 by Jeffery Myers (CC0 1.0), and [doctest](https://github.com/doctest/doctest) (MIT).
