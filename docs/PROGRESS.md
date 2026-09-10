@@ -37,7 +37,11 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
       >=3 corners blocked = Full, 2 = Mini; bonus mini100/single200/double400/
       triple800 * level. HUD shows T-SPIN!. +6 tests. Matches python-tetris's
       simplified detector (not guideline SRS) per the parity scope.
-- [ ] Juice: shake/particles (`innovation/juice` @ 0cab591)
+- [x] Juice: shake/particles (`innovation/juice` @ 0cab591) ✅
+      Core: Board::lastClearCount() signal. App: Juice (screen shake 0.15s scaling
+      with lines + particle burst on clears), pure math unit-tested headlessly
+      (juice.cpp has no raylib dep). +5 tests. Shake offsets the playfield draw;
+      particles integrate with gravity and fade.
 - [ ] Heuristic AI (`innovation/ai` @ d285bb9)
 - [x] High-score persistence ✅
       Core HighScores (per-mode best score + Sprint best time) serialized to

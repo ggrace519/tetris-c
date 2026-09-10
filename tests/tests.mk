@@ -11,8 +11,11 @@ OUTDIR   := tests/bin
 BIN      := $(OUTDIR)/core_tests
 
 CORE_SRC := $(wildcard src/core/*.cpp)
+# juice.cpp is app-layer but has NO raylib dependency (only core/constants.hpp),
+# so its pure shake/particle math is unit-tested here too.
+APP_PURE := src/app/juice.cpp
 TEST_SRC := $(wildcard tests/*.cpp)
-SRC      := $(CORE_SRC) $(TEST_SRC)
+SRC      := $(CORE_SRC) $(APP_PURE) $(TEST_SRC)
 
 .PHONY: test clean
 test: $(BIN)

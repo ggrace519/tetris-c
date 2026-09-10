@@ -16,6 +16,7 @@ void Board::reset() {
     combo_ = 0;
     maxCombo_ = 0;
     lastTSpin_ = TSpin::None;
+    lastClearCount_ = 0;
     fallSpeed_ = kStartFallSpeed;
     gameOver_ = false;
     gravityTimer_ = 0.0;
@@ -131,6 +132,7 @@ void Board::lock() {
     }
 
     const int lines = clearLines();
+    lastClearCount_ = lines;  // signal for app-side juice
     if (lines > 0) {
         score_ += static_cast<long>(kLineScores[lines]) * level_;
         linesTotal_ += lines;

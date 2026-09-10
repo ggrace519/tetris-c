@@ -3,6 +3,7 @@
 #ifndef TETRIS_APP_RENDER_HPP
 #define TETRIS_APP_RENDER_HPP
 
+#include "app/juice.hpp"
 #include "core/board.hpp"
 #include "core/highscores.hpp"
 #include "core/modes.hpp"
@@ -22,7 +23,8 @@ enum class Screen { Menu, Playing, Paused, GameOver, Won };
 // Draw the in-game frame for the given controller + screen state. `best` is the
 // stored record for the current mode (for the BEST line). Call between
 // BeginDrawing/EndDrawing.
-void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best);
+void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
+               const Juice& juice);
 
 // Draw the start menu (mode + difficulty selection) with the highlighted mode's
 // stored best. `modeSel`/`diffSel` are the currently highlighted indices.

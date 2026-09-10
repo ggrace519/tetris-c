@@ -37,6 +37,10 @@ public:
     // T-spin classification of the LAST lock (for HUD/feedback). None until a lock.
     enum class TSpin { None, Mini, Full };
     TSpin lastTSpin() const { return lastTSpin_; }
+
+    // Lines cleared by the most recent lock (0..4). The app polls this to fire
+    // juice (screen shake / particles) on the frame a clear happens.
+    int lastClearCount() const { return lastClearCount_; }
     double fallSpeed() const { return fallSpeed_; }
     bool gameOver() const { return gameOver_; }
 
@@ -111,6 +115,7 @@ private:
     int combo_ = 0;
     int maxCombo_ = 0;
     TSpin lastTSpin_ = TSpin::None;
+    int lastClearCount_ = 0;
     double fallSpeed_ = kStartFallSpeed;
     bool gameOver_ = false;
     Piece current_{ShapeId::I};

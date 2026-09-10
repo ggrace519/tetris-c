@@ -127,6 +127,7 @@ void Game::updateGravity(float dt) {
     if (screen_ != Screen::Playing) return;
 
     Board& board = mc_->board();
+    const int linesBefore = board.linesCleared();
     handleHorizontal(dt);
 
     // Soft drop: while Down is held, step at a faster cadence (kSoftDropRate rows/s)
@@ -144,6 +145,20 @@ void Game::updateGravity(float dt) {
 
     // Gravity + lock delay handled by the core step().
     board.step(dt);
+
+    // Juice: if this step cleared lines, fire shake + a particle burst.
+    if (board.linesCleared() > linesBefore) {
+        const int lines = board.lastClearCount();
+        juice_.onLineClear(lines);
+        // Spread a burst across the playfield near the bottom third.
+        for (int c = 0; c < kCols; ++c) {
+            const float px = c * kCellPx + kCellPx / 2.0f;
+            const float py = (kRows - 2) * kCellPx;
+            juice_.spawnBurst(px, py, kPieceColors[c % kShapeCount], 3);
+        }
+    }
+    juice_.update(dt);
+
     // Advance mode timers (Ultra garbage, win checks).
     mc_->update(dt);
 
@@ -172,7 +187,7 @@ void Game::run() {
             const GameMode m = static_cast<GameMode>(modeSel_);
             drawMenu(modeSel_, diffSel_, highScores_.record(m));
         } else {
-            drawFrame(*mc_, screen_, highScores_.record(mc_->mode()));
+            drawFrame(*mc_, screen_, highScores_.record(mc_->mode()), juice_);
         }
         EndDrawing();
     }

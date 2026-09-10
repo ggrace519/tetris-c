@@ -11,9 +11,12 @@ namespace {
 // Convert a core RGBA color to a raylib Color.
 inline ::Color rl(const tetris::Color& c) { return ::Color{c.r, c.g, c.b, c.a}; }
 
+// Playfield draw offset (set by screen shake each frame).
+int gOffX = 0, gOffY = 0;
+
 void drawCell(int col, int row, const tetris::Color& color, bool ghost = false) {
-    const int px = col * kCellPx;
-    const int py = row * kCellPx;
+    const int px = col * kCellPx + gOffX;
+    const int py = row * kCellPx + gOffY;
     if (ghost) {
         // Outline only for the ghost.
         DrawRectangleLines(px, py, kCellPx, kCellPx, rl(color));
@@ -24,12 +27,12 @@ void drawCell(int col, int row, const tetris::Color& color, bool ghost = false) 
 }
 
 void drawPlayfield(const Board& board) {
-    // Background + grid lines.
-    DrawRectangle(0, 0, kPlayW, kPlayH, rl(kColBlack));
+    // Background + grid lines (with shake offset).
+    DrawRectangle(gOffX, gOffY, kPlayW, kPlayH, rl(kColBlack));
     for (int x = 0; x <= kCols; ++x)
-        DrawLine(x * kCellPx, 0, x * kCellPx, kPlayH, rl(kColGridLine));
+        DrawLine(x * kCellPx + gOffX, gOffY, x * kCellPx + gOffX, kPlayH + gOffY, rl(kColGridLine));
     for (int y = 0; y <= kRows; ++y)
-        DrawLine(0, y * kCellPx, kPlayW, y * kCellPx, rl(kColGridLine));
+        DrawLine(gOffX, y * kCellPx + gOffY, kPlayW + gOffX, y * kCellPx + gOffY, rl(kColGridLine));
 
     // Locked cells.
     const Grid& g = board.grid();
@@ -159,10 +162,27 @@ void drawCenterMessage(const char* title, const char* subtitle) {
 
 }  // namespace
 
-void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best) {
+void drawParticles(const Juice& juice) {
+    for (const Particle& p : juice.particles()) {
+        const float a = p.maxLife > 0 ? (p.life / p.maxLife) : 0.0f;
+        Color c = p.color;
+        DrawRectangle(static_cast<int>(p.x), static_cast<int>(p.y), 4, 4,
+                      ::Color{c.r, c.g, c.b, static_cast<unsigned char>(a * 255)});
+    }
+}
+
+void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
+               const Juice& juice) {
     const Board& board = mc.board();
     ClearBackground(rl(kColDarkBg));
+
+    // Screen shake: offset all playfield drawing by the current shake amount.
+    gOffX = static_cast<int>(juice.shakeX());
+    gOffY = static_cast<int>(juice.shakeY());
     drawPlayfield(board);
+    gOffX = gOffY = 0;  // reset so HUD/next panel are not shaken
+
+    drawParticles(juice);
     drawNextPreview(board);
     drawHud(mc);
 

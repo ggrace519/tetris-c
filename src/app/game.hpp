@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "app/juice.hpp"
 #include "app/render.hpp"
 #include "core/highscores.hpp"
 #include "core/modes.hpp"
@@ -33,6 +34,7 @@ private:
     HighScores highScores_;
     std::string savePath_;
     bool resultRecorded_ = false;  // guards recordResult() to once per game end
+    Juice juice_;
 
     // DAS/ARR horizontal auto-shift state.
     int dasDir_ = 0;         // -1 left, +1 right, 0 none (last resolved direction)
