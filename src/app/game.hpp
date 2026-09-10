@@ -29,6 +29,7 @@ private:
 
     // DAS/ARR horizontal auto-shift state.
     int dasDir_ = 0;         // -1 left, +1 right, 0 none (last resolved direction)
+    int socdLast_ = 0;       // -1/+1: most-recently-pressed horizontal key (SOCD)
     double dasTimer_ = 0.0;  // time the current direction has been held
     double arrTimer_ = 0.0;  // accumulator for repeat firing
     double softDropTimer_ = 0.0;  // soft-drop cadence accumulator

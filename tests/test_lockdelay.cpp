@@ -89,6 +89,25 @@ TEST_CASE("hard drop bypasses lock delay and locks immediately") {
     CHECK(filledCells(b) == 4);  // locked instantly, no delay needed
 }
 
+TEST_CASE("soft drop while resting still locks (move fails, timer keeps running)") {
+    // Simulates the app soft-drop loop: move(0,1) each frame while Down is held.
+    // Once the piece rests, move(0,1) fails (no lock-delay reset), so step()'s
+    // timer must still elapse and lock the piece — not stall forever.
+    Board b(8);
+    b.setActiveForTest(placed(ShapeId::O, 3, kRows - 2, 0));  // already on the floor
+    bool locked = false;
+    for (int frame = 0; frame < 60 && !locked; ++frame) {  // ~1s at 60fps
+        b.move(0, 1);            // soft-drop attempt (fails while resting → no reset)
+        locked = b.step(1.0 / 60.0);
+    }
+    CHECK(locked);
+    int filled = 0;
+    for (const auto& row : b.grid())
+        for (const auto& c : row)
+            if (c.has_value()) ++filled;
+    CHECK(filled == 4);
+}
+
 TEST_CASE("moving off a ledge un-lands the piece (gravity resumes)") {
     Board b(7);
     // Build a one-column ledge so the piece rests, then can move off it.

@@ -66,11 +66,19 @@ void Game::handleHorizontal(double dt) {
     const bool left = IsKeyDown(KEY_LEFT);
     const bool right = IsKeyDown(KEY_RIGHT);
 
-    // SOCD: both held → keep the most-recently-pressed direction.
+    // Track the most-recently-pressed horizontal key for SOCD resolution
+    // (last-pressed wins), matching python-tetris resolve_direction.
+    if (IsKeyPressed(KEY_LEFT)) socdLast_ = -1;
+    if (IsKeyPressed(KEY_RIGHT)) socdLast_ = 1;
+
+    // Resolve the active direction.
     int dir = 0;
     if (left && !right) dir = -1;
     else if (right && !left) dir = 1;
-    else if (left && right) dir = (dasDir_ != 0) ? dasDir_ : -1;  // default left
+    else if (left && right) {
+        // Both held → last-pressed wins; default left if unknown.
+        dir = (socdLast_ != 0) ? socdLast_ : -1;
+    }
 
     if (dir == 0) {
         dasDir_ = 0;
