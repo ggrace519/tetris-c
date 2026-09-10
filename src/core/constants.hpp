@@ -40,7 +40,9 @@ inline constexpr Color kColGarbage{100, 100, 100, 255};
 // --- The 7 tetrominoes ---
 // Order matches settings.py SHAPES dict order (I,O,T,S,Z,J,L) so the 7-bag draws
 // the same set. ShapeId indexes into kShapes / kPieceColors.
-enum class ShapeId : int { I = 0, O, T, S, Z, J, L, Count };
+// Garbage is a grid-only marker (Ultra mode): never drawn from the bag, never
+// used to index kShapes/kPieceColors — it sits AFTER Count so kShapeCount stays 7.
+enum class ShapeId : int { I = 0, O, T, S, Z, J, L, Count, Garbage };
 inline constexpr int kShapeCount = static_cast<int>(ShapeId::Count);  // 7
 
 inline constexpr std::array<char, kShapeCount> kShapeNames{'I', 'O', 'T', 'S', 'Z', 'J', 'L'};
@@ -54,6 +56,12 @@ inline constexpr std::array<Color, kShapeCount> kPieceColors{
     kColBlue,    // J
     kColOrange,  // L
 };
+
+// Color for any cell stored in the grid (handles the Garbage marker).
+inline constexpr Color colorForCell(ShapeId s) {
+    return (s == ShapeId::Garbage) ? kColGarbage
+                                   : kPieceColors[static_cast<int>(s)];
+}
 
 // A single cell offset within a piece's 4x4 box.
 struct Cell {

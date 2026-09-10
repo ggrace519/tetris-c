@@ -4,6 +4,7 @@
 #define TETRIS_APP_RENDER_HPP
 
 #include "core/board.hpp"
+#include "core/modes.hpp"
 
 namespace tetris {
 
@@ -15,11 +16,15 @@ inline constexpr int kPlayH = kRows * kCellPx;
 inline constexpr int kWinW = kPlayW + kSidePanel;
 inline constexpr int kWinH = kPlayH;
 
-enum class Screen { Playing, Paused, GameOver };
+enum class Screen { Menu, Playing, Paused, GameOver, Won };
 
-// Draw the whole frame for the given board + screen state. Call between
+// Draw the in-game frame for the given controller + screen state. Call between
 // BeginDrawing/EndDrawing.
-void drawFrame(const Board& board, Screen screen);
+void drawFrame(const ModeController& mc, Screen screen);
+
+// Draw the start menu (mode + difficulty selection). `modeSel`/`diffSel` are the
+// currently highlighted indices.
+void drawMenu(int modeSel, int diffSel);
 
 }  // namespace tetris
 

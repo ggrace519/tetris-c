@@ -36,7 +36,7 @@ void drawPlayfield(const Board& board) {
     for (int r = 0; r < kRows; ++r) {
         for (int c = 0; c < kCols; ++c) {
             if (g[r][c].has_value()) {
-                drawCell(c, r, kPieceColors[static_cast<int>(g[r][c].value())]);
+                drawCell(c, r, colorForCell(g[r][c].value()));
             }
         }
     }
@@ -67,26 +67,48 @@ void drawNextPreview(const Board& board) {
     }
 }
 
-void drawHud(const Board& board) {
+const char* modeName(GameMode m) {
+    switch (m) {
+        case GameMode::Marathon: return "MARATHON";
+        case GameMode::Sprint:   return "SPRINT";
+        case GameMode::Ultra:    return "ULTRA";
+    }
+    return "";
+}
+
+void drawHud(const ModeController& mc) {
+    const Board& board = mc.board();
     const int x = kPlayW + 20;
     char buf[64];
-    DrawText("SCORE", x, 220, 20, rl(kColGray));
+
+    DrawText(modeName(mc.mode()), x, 20, 22, rl(kColWhite));
+    // Mode-specific objective line.
+    if (mc.mode() == GameMode::Ultra) {
+        std::snprintf(buf, sizeof(buf), "Time %.1fs", mc.elapsed());
+    } else {
+        std::snprintf(buf, sizeof(buf), "%d / %d lines  %.1fs",
+                      board.linesCleared(), mc.winLines(), mc.elapsed());
+    }
+    DrawText(buf, x, 46, 16, rl(kColGray));
+
+    DrawText("SCORE", x, 100, 18, rl(kColGray));
     std::snprintf(buf, sizeof(buf), "%ld", board.score());
-    DrawText(buf, x, 244, 26, rl(kColWhite));
+    DrawText(buf, x, 122, 26, rl(kColWhite));
 
-    DrawText("LEVEL", x, 300, 20, rl(kColGray));
+    DrawText("LEVEL", x, 180, 18, rl(kColGray));
     std::snprintf(buf, sizeof(buf), "%d", board.level());
-    DrawText(buf, x, 324, 26, rl(kColWhite));
+    DrawText(buf, x, 202, 26, rl(kColWhite));
 
-    DrawText("LINES", x, 380, 20, rl(kColGray));
+    DrawText("LINES", x, 260, 18, rl(kColGray));
     std::snprintf(buf, sizeof(buf), "%d", board.linesCleared());
-    DrawText(buf, x, 404, 26, rl(kColWhite));
+    DrawText(buf, x, 282, 26, rl(kColWhite));
 
-    DrawText("Move  <- ->", x, 480, 16, rl(kColGray));
-    DrawText("Rotate  Z / X", x, 500, 16, rl(kColGray));
-    DrawText("Soft drop  v", x, 520, 16, rl(kColGray));
-    DrawText("Hard drop  SPACE", x, 540, 16, rl(kColGray));
-    DrawText("Pause P  Restart R", x, 560, 16, rl(kColGray));
+    DrawText("Move  <- ->", x, 470, 16, rl(kColGray));
+    DrawText("Rotate  Z / X", x, 490, 16, rl(kColGray));
+    DrawText("Soft drop  v", x, 510, 16, rl(kColGray));
+    DrawText("Hard drop  SPACE", x, 530, 16, rl(kColGray));
+    DrawText("Pause P", x, 550, 16, rl(kColGray));
+    DrawText("Menu M  Restart R", x, 570, 16, rl(kColGray));
 }
 
 void drawCenterMessage(const char* title, const char* subtitle) {
@@ -102,17 +124,50 @@ void drawCenterMessage(const char* title, const char* subtitle) {
 
 }  // namespace
 
-void drawFrame(const Board& board, Screen screen) {
+void drawFrame(const ModeController& mc, Screen screen) {
+    const Board& board = mc.board();
     ClearBackground(rl(kColDarkBg));
     drawPlayfield(board);
     drawNextPreview(board);
-    drawHud(board);
+    drawHud(mc);
 
     if (screen == Screen::Paused) {
         drawCenterMessage("PAUSED", "Press P to resume");
     } else if (screen == Screen::GameOver) {
-        drawCenterMessage("GAME OVER", "Press R to restart");
+        drawCenterMessage("GAME OVER", "R restart  ·  M menu");
+    } else if (screen == Screen::Won) {
+        drawCenterMessage("YOU WIN!", "R restart  ·  M menu");
     }
+}
+
+void drawMenu(int modeSel, int diffSel) {
+    static const char* kModes[] = {"MARATHON", "SPRINT", "ULTRA"};
+    static const char* kDiffs[] = {"EASY", "NORMAL", "HARD", "EXPERT"};
+
+    ClearBackground(rl(kColDarkBg));
+
+    const char* title = "TETRIS-C";
+    const int tw = MeasureText(title, 48);
+    DrawText(title, (kWinW - tw) / 2, 50, 48, rl(kColCyan));
+
+    DrawText("MODE   (up/down)", 60, 150, 20, rl(kColGray));
+    for (int i = 0; i < 3; ++i) {
+        const bool sel = (i == modeSel);
+        DrawText(kModes[i], 90, 185 + i * 34, 26,
+                 rl(sel ? kColYellow : kColWhite));
+        if (sel) DrawText(">", 60, 185 + i * 34, 26, rl(kColYellow));
+    }
+
+    DrawText("DIFFICULTY   (left/right)", 60, 320, 20, rl(kColGray));
+    for (int i = 0; i < 4; ++i) {
+        const bool sel = (i == diffSel);
+        DrawText(kDiffs[i], 90 + i * 110, 355, 22,
+                 rl(sel ? kColYellow : kColWhite));
+    }
+    DrawText("(difficulty affects Ultra garbage speed)", 60, 390, 14, rl(kColGray));
+
+    DrawText("Press ENTER or SPACE to start", 60, 470, 22, rl(kColGreen));
+    DrawText("Esc to quit", 60, 505, 16, rl(kColGray));
 }
 
 }  // namespace tetris

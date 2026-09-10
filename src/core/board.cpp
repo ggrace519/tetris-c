@@ -120,6 +120,34 @@ int Board::clearLines() {
     return cleared;
 }
 
+bool Board::injectGarbage(int holeCol) {
+    if (gameOver_) return false;
+    if (holeCol < 0) holeCol = 0;
+    if (holeCol >= kCols) holeCol = kCols - 1;
+
+    // If the top row holds any filled cell, shifting up tops it out.
+    for (int c = 0; c < kCols; ++c) {
+        if (grid_[0][c].has_value()) {
+            gameOver_ = true;
+            return false;
+        }
+    }
+
+    // Shift every row up by one (row r takes row r+1's contents).
+    for (int r = 0; r < kRows - 1; ++r) {
+        grid_[r] = grid_[r + 1];
+    }
+    // Build the garbage row: all filled except the hole. Use the garbage marker
+    // shape (rendered gray) — we reuse ShapeId but color via kColGarbage in render.
+    auto& bottom = grid_[kRows - 1];
+    for (int c = 0; c < kCols; ++c) {
+        bottom[c] = (c == holeCol) ? std::nullopt : GridCell(ShapeId::Garbage);
+    }
+    // Garbage may now overlap the active piece; if so, the player is topping out.
+    if (collides(current_)) gameOver_ = true;
+    return true;
+}
+
 std::array<Cell, 4> Board::ghostCells() const {
     int ghostY = current_.y();
     while (!collides(current_, current_.x(), ghostY + 1, current_.rotation())) {

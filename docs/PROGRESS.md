@@ -13,10 +13,10 @@ gravity, input, render playfield/ghost/next/HUD, pause/restart/game-over).
 - Verified: game runs 60 FPS, 520×600 window, renders correctly (screenshot).
 
 ### Tier 2 — Modes + core feel (IN PROGRESS)
-- [ ] Modes: Marathon / Sprint / Ultra (`innovation/modes` @ c4c9676)
-      + a way to select them (start screen / key) — modes must be reachable.
-      NOTE: Ultra garbage is broken in the Python source; port fixes it. Needs a
-      new Board API to push a garbage row from the bottom (test headless first).
+- [x] Modes: Marathon / Sprint / Ultra (`innovation/modes` @ c4c9676) ✅
+      Core `ModeController` + `Board::injectGarbage` (fixes the dead Python Ultra
+      mechanic). Start menu (mode + difficulty select) makes them reachable —
+      menu render verified by screenshot. Core tests +13 (garbage + modes).
 - [ ] DAS/ARR + lock delay (`innovation/das-lock-delay` @ 4e91423)
 - [ ] Combo tracking (`innovation/combos` @ 12dd321)
 - [ ] Hard-drop animation (`innovation/drop-animation` @ 9d9054a)

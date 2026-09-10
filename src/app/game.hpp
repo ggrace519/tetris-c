@@ -1,10 +1,12 @@
 // Game: owns the raylib window, the 60 FPS loop, screen state, the gravity
-// accumulator, and input→core mapping. Ports python-tetris/tetris_game/app.py.
+// accumulator, mode selection, and input→core mapping. Ports app.py + a menu.
 #ifndef TETRIS_APP_GAME_HPP
 #define TETRIS_APP_GAME_HPP
 
+#include <memory>
+
 #include "app/render.hpp"
-#include "core/board.hpp"
+#include "core/modes.hpp"
 
 namespace tetris {
 
@@ -14,11 +16,16 @@ public:
     void run();  // blocks until the window closes
 
 private:
-    void processInput();
+    void processMenuInput();
+    void processPlayInput();
     void updateGravity(float dt);
+    void startSelectedMode();
 
-    Board board_;
-    Screen screen_ = Screen::Playing;
+    Screen screen_ = Screen::Menu;
+    int modeSel_ = 0;  // 0..2  Marathon/Sprint/Ultra
+    int diffSel_ = 1;  // 0..3  Easy/Normal/Hard/Expert
+
+    std::unique_ptr<ModeController> mc_;  // created when a mode starts
     double fallTimer_ = 0.0;
 };
 

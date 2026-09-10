@@ -57,6 +57,14 @@ public:
     // Landing cells of the active piece (for the ghost).
     std::array<Cell, 4> ghostCells() const;
 
+    // Push one garbage row onto the bottom: the locked stack shifts up one row and
+    // a full row with a single empty column (`holeCol`) is inserted at the bottom.
+    // If shifting would carry any filled cell off the top of the field, the board
+    // tops out (game over). Used by Ultra mode. Returns true if a row was injected
+    // (false if already game over). NOTE: the Python source's Ultra garbage was
+    // dead code (never drained); this is the intended, working behavior.
+    bool injectGarbage(int holeCol);
+
     // Testing hook: force a specific active piece (position/rotation preserved from spawn).
     void setActiveForTest(const Piece& p) { current_ = p; }
     // Testing hook: set a locked cell.
