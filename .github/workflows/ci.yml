@@ -22,7 +22,7 @@ jobs:
     name: core tests (headless, no raylib)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install compiler
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends g++ make
@@ -40,7 +40,7 @@ jobs:
     name: build game (premake5 + raylib)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # raylib is built from source by the premake bootstrap; these are its
       # Linux build dependencies (see docs research / ADR-0003). raylib is NOT
@@ -58,7 +58,7 @@ jobs:
       # build/external/raylib-master (gitignored). Cache that tree so the fetch
       # + raylib compile only reruns when the premake config changes.
       - name: Cache raylib source + build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: build/external
           key: raylib-${{ runner.os }}-${{ hashFiles('build/premake5.lua') }}
