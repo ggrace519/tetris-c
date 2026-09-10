@@ -179,8 +179,15 @@ bool Board::step(double dt) {
     if (dropAnimActive_) {
         animProgress_ += dt / kDropAnimDuration;
         if (animProgress_ >= 1.0) {
-            // Animation done: snap the piece to its landing row and lock it.
-            current_.setPos(current_.x(), animLandingY_);
+            // Animation done: RECOMPUTE the landing row before locking. animLandingY_
+            // was captured at hardDrop() time, but the floor can rise underneath the
+            // animation (e.g. Ultra garbage injected mid-drop), which would make the
+            // stale value overwrite locked cells. Re-scan from the current position.
+            int landingY = current_.y();
+            while (!collides(current_, current_.x(), landingY + 1, current_.rotation())) {
+                ++landingY;
+            }
+            current_.setPos(current_.x(), landingY);
             dropAnimActive_ = false;
             animProgress_ = 0.0;
             lock();  // lock() clears timing state and spawns the next piece

@@ -73,6 +73,19 @@ TEST_CASE("hard-drop score is credited at drop time, before the lock") {
     CHECK(b.score() == afterDrop);      // lock added nothing extra (no line clear)
 }
 
+TEST_CASE("REGRESSION: garbage injected mid-animation does not corrupt the drop") {
+    // If the floor rises (Ultra garbage) while a hard drop is animating, the piece
+    // must re-find its landing row at completion, not overwrite the new garbage.
+    Board b(1);
+    b.setActiveForTest(placed(ShapeId::O, 3, 0, 0));
+    b.hardDrop();
+    REQUIRE(b.animating());
+    b.injectGarbage(0);  // 9 garbage cells at the bottom, floor rises one row
+    while (b.animating()) b.step(0.1);
+    // 9 garbage + 4 O cells, and the O rests ON TOP of the garbage (no overwrite).
+    CHECK(filled(b) == 13);
+}
+
 TEST_CASE("landing row snaps exactly to the computed landingY") {
     Board b(5);
     b.setActiveForTest(placed(ShapeId::O, 3, 0, 0));
