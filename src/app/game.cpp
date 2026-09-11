@@ -11,6 +11,9 @@ Game::Game() {
     InitWindow(kWinW, kWinH, "tetris-c");
     SetTargetFPS(60);
 
+    // Procedural SFX (no asset files). Safe if no audio device is present.
+    audio_.init();
+
     // High-score file next to the executable's working dir.
     savePath_ = "highscores.dat";
     highScores_.load(savePath_);
@@ -81,12 +84,15 @@ void Game::processPlayInput() {
     // than rotate(1) then rotate(-1) (a net-zero double-rotate with spurious lock-
     // delay resets / spin-flag churn).
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_X)) {
-        board.rotate(1);
+        if (board.rotate(1)) audio_.play(Sfx::Rotate);
     } else if (IsKeyPressed(KEY_Z)) {
-        board.rotate(-1);
+        if (board.rotate(-1)) audio_.play(Sfx::Rotate);
     }
     // Hard drop — edge-triggered.
-    if (IsKeyPressed(KEY_SPACE)) board.hardDrop();
+    if (IsKeyPressed(KEY_SPACE)) {
+        board.hardDrop();
+        audio_.play(Sfx::HardDrop);
+    }
 
     if (board.gameOver()) {
         screen_ = Screen::GameOver;
@@ -205,13 +211,26 @@ void Game::updateGravity(float dt, int linesBefore) {
         }
     }
 
+    // Snapshot lock count + level so we can detect a lock / level-up caused by
+    // this step (the core advances piecesLocked() on any lock path).
+    const int locksBefore = board.piecesLocked();
+    const int levelBefore = board.level();
+
     // Gravity + lock delay handled by the core step().
     board.step(dt);
 
-    // Juice: if this step cleared lines, fire shake + a particle burst.
-    if (board.linesCleared() > linesBefore) {
+    // A piece locked this step: play the "thock" (unless it cleared lines — the
+    // clear SFX below is the louder, more informative event for that case).
+    const bool locked = board.piecesLocked() > locksBefore;
+    const bool clearedLines = board.linesCleared() > linesBefore;
+    if (locked && !clearedLines && !board.gameOver()) audio_.play(Sfx::Lock);
+
+    // Juice + audio: if this step cleared lines, fire shake + a particle burst and
+    // the combo-escalating clear SFX (fanfare for a Tetris / T-spin).
+    if (clearedLines) {
         const int lines = board.lastClearCount();
         juice_.onLineClear(lines);
+        audio_.playClear(lines, board.combo(), board.lastTSpin() != Board::TSpin::None);
         // Spread a burst across the playfield near the bottom third.
         for (int c = 0; c < kCols; ++c) {
             const float px = c * kCellPx + kCellPx / 2.0f;
@@ -219,6 +238,7 @@ void Game::updateGravity(float dt, int linesBefore) {
             juice_.spawnBurst(px, py, kPieceColors[c % kShapeCount], 3);
         }
     }
+    if (board.level() > levelBefore) audio_.play(Sfx::LevelUp);
     juice_.update(dt);
 
     // Advance mode timers (Ultra garbage, win checks).
@@ -226,9 +246,11 @@ void Game::updateGravity(float dt, int linesBefore) {
 
     if (board.gameOver()) {
         screen_ = Screen::GameOver;
+        if (!resultRecorded_) audio_.play(Sfx::GameOver);  // before recordResult sets the flag
         recordResult();
     } else if (mc_->won()) {
         screen_ = Screen::Won;
+        if (!resultRecorded_) audio_.play(Sfx::Tetris);    // win fanfare
         recordResult();
     }
 }
