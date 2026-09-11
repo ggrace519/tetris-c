@@ -242,24 +242,49 @@ void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
         }
     }
 
-    if (screen == Screen::Paused) {
-        drawCenterMessage("PAUSED", "Press P to resume");
-    } else if (screen == Screen::GameOver) {
+    // Note: the PAUSED overlay is drawn by drawPauseMenu() AFTER the scene blit
+    // (so its text stays crisp and isn't bloomed); it's not handled here.
+    if (screen == Screen::GameOver) {
         drawCenterMessage("GAME OVER", "R restart  ·  M menu");
     } else if (screen == Screen::Won) {
         drawCenterMessage("YOU WIN!", "R restart  ·  M menu");
     }
 }
 
-void drawMenu(int modeSel, int diffSel, const ModeRecord& best) {
+// A slow drifting gradient + faint falling blocks behind the menu. Purely
+// decorative; driven by GetTime() so it animates without any game state.
+void drawAnimatedBackground() {
+    const float t = static_cast<float>(GetTime());
+    // Hue-shifting vertical gradient: dark, with a slowly cycling cool tint on top.
+    const auto ch = [](float base, float amp, float phase) {
+        return static_cast<unsigned char>(base + amp * (0.5f + 0.5f * std::sin(phase)));
+    };
+    const ::Color top{ch(22, 14, t * 0.4f), ch(24, 10, t * 0.4f + 2.0f),
+                      ch(40, 24, t * 0.4f + 4.0f), 255};
+    DrawRectangleGradientV(0, 0, kWinW, kWinH, top, rl(kColBlack));
+
+    // Faint drifting tetromino-colored squares.
+    for (int i = 0; i < 14; ++i) {
+        const float seed = i * 41.0f;
+        const float x = std::fmod(seed * 7.0f, kWinW);
+        const float y = std::fmod(seed * 13.0f + t * (18.0f + i * 3.0f), kWinH + 40.0f) - 20.0f;
+        const ::Color c = rl(kPieceColors[i % kShapeCount]);
+        DrawRectangle(static_cast<int>(x), static_cast<int>(y), 16, 16,
+                      ::Color{c.r, c.g, c.b, 26});
+    }
+}
+
+void drawMenu(int modeSel, int diffSel, const ModeRecord& best, Track music) {
     static const char* kModes[] = {"MARATHON", "SPRINT", "ULTRA"};
     static const char* kDiffs[] = {"EASY", "NORMAL", "HARD", "EXPERT"};
 
-    ClearBackground(rl(kColDarkBg));
+    drawAnimatedBackground();
 
     const char* title = "TETRIS-C";
     const int tw = MeasureText(title, 48);
-    DrawText(title, (kWinW - tw) / 2, 50, 48, rl(kColCyan));
+    // Gentle title bob.
+    const int titleY = 50 + static_cast<int>(4.0f * std::sin(static_cast<float>(GetTime()) * 1.5f));
+    DrawText(title, (kWinW - tw) / 2, titleY, 48, rl(kColCyan));
 
     DrawText("MODE   (up/down)", 60, 150, 20, rl(kColGray));
     for (int i = 0; i < 3; ++i) {
@@ -288,8 +313,55 @@ void drawMenu(int modeSel, int diffSel, const ModeRecord& best) {
         DrawText(buf, 60, 425, 18, rl(kColCyan));
     }
 
-    DrawText("Press ENTER or SPACE to start", 60, 470, 22, rl(kColGreen));
-    DrawText("Esc to quit", 60, 505, 16, rl(kColGray));
+    // Current music track (change it in the pause menu during play).
+    {
+        char buf[48];
+        std::snprintf(buf, sizeof(buf), "Music: %s", trackName(music));
+        DrawText(buf, 60, 450, 16, rl(kColPurple));
+    }
+
+    DrawText("Press ENTER or SPACE to start", 60, 478, 22, rl(kColGreen));
+    DrawText("Esc to quit", 60, 512, 16, rl(kColGray));
+}
+
+void drawPauseMenu(int sel, Track music) {
+    // Dim the whole window, then a centered menu panel.
+    DrawRectangle(0, 0, kWinW, kWinH, ::Color{0, 0, 0, 170});
+
+    const char* title = "PAUSED";
+    const int tw = MeasureText(title, 40);
+    DrawText(title, (kWinW - tw) / 2, kWinH / 2 - 130, 40, rl(kColWhite));
+
+    char musicRow[48];
+    std::snprintf(musicRow, sizeof(musicRow), "Music: < %s >", trackName(music));
+    const char* rows[4] = {"Resume", "Restart", musicRow, "Quit to menu"};
+
+    for (int i = 0; i < 4; ++i) {
+        const bool on = (i == sel);
+        const int y = kWinH / 2 - 50 + i * 40;
+        const int rw = MeasureText(rows[i], 24);
+        const int x = (kWinW - rw) / 2;
+        if (on) DrawText(">", x - 28, y, 24, rl(kColYellow));
+        DrawText(rows[i], x, y, 24, rl(on ? kColYellow : kColWhite));
+    }
+    DrawText("Up/Down select  ·  Enter choose  ·  P resume",
+             (kWinW - MeasureText("Up/Down select  ·  Enter choose  ·  P resume", 14)) / 2,
+             kWinH / 2 + 130, 14, rl(kColGray));
+}
+
+void drawDangerVignette(float danger) {
+    if (danger <= 0.01f) return;
+    // Pulse the intensity so high stacks feel urgent.
+    const float pulse = 0.65f + 0.35f * std::sin(static_cast<float>(GetTime()) * 6.0f);
+    const auto alpha = static_cast<unsigned char>(std::min(1.0f, danger * pulse) * 130.0f);
+    const ::Color edge{200, 40, 40, alpha};
+    const ::Color clear{200, 40, 40, 0};
+    const int band = 90;  // vignette thickness
+    // Four edge gradients fading inward.
+    DrawRectangleGradientV(0, 0, kWinW, band, edge, clear);               // top
+    DrawRectangleGradientV(0, kWinH - band, kWinW, band, clear, edge);    // bottom
+    DrawRectangleGradientH(0, 0, band, kWinH, edge, clear);               // left
+    DrawRectangleGradientH(kWinW - band, 0, band, kWinH, clear, edge);    // right
 }
 
 }  // namespace tetris

@@ -7,9 +7,21 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- **Pause menu, selectable background music, and a post-FX visual layer**
+  (ADR-0007):
+  - **Pause menu** opened with **Enter** (or P): Resume / Restart / Music /
+    Quit to menu, arrow-navigable; game logic freezes and music ducks while paused.
+  - **Background music** — three synthesized chiptune loops (Calm / Classic /
+    Fast) built in code and streamed, selectable + mutable from the pause and start
+    menus. Zero audio asset files (authored loops, not a generated score — PRD §2
+    amended).
+  - **Bloom / neon glow** via a scene `RenderTexture2D` + an embedded bloom shader;
+    a **danger state** (pulsing red vignette + rising heartbeat as the stack nears
+    the top, driven by the new `Board::stackHeight()`); and an **animated menu
+    background** (drifting gradient + faint falling blocks, bobbing title).
 - **Complete playable game (all three tiers).** A C++/raylib Tetris with feature
-  parity to `python-tetris`, on a raylib-free pure-logic core (93 headless test
-  cases / 428 assertions) plus a thin raylib app layer, running at 60 FPS:
+  parity to `python-tetris`, on a raylib-free pure-logic core (94 headless test
+  cases / 432 assertions) plus a thin raylib app layer, running at 60 FPS:
   - **Tier 1:** 10×20 board, 7-bag randomizer, simplified-SRS wall kicks, ghost
     piece, next preview, soft/hard drop, classic scoring, level/speed progression,
     pause/restart/game-over.

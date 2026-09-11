@@ -37,6 +37,10 @@ public:
     // lock-delay, or hard drop). A stable "which piece is active" signal for the
     // app-side AI plan cache, which must recompute whenever the piece changes.
     int piecesLocked() const { return piecesLocked_; }
+    // Height of the locked stack: number of rows from the top of the highest
+    // filled cell down to the floor (0 = empty board, kRows = stack at the top).
+    // The active falling piece is NOT counted. Drives the app-side danger state.
+    int stackHeight() const;
 
     // T-spin classification of the LAST lock (for HUD/feedback). None until a lock.
     enum class TSpin { None, Mini, Full };

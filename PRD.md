@@ -41,7 +41,10 @@ decision:
 - **Multiplayer / online / netcode** — needs a server and infra.
 - **Machine-learning AI** — heuristic AI is sufficient and more transparent.
 - **Mobile / touch port** — different UI and build pipeline.
-- **Procedural music generation** — no clear user value here.
+- **Procedural music *generation*** (runtime-composed/randomised scores) — no clear
+  user value. *Amended by ADR-0007:* synthesized **authored loops** (fixed,
+  hand-composed chiptune tracks rendered to PCM at startup, selectable) ARE in
+  scope — they keep the repo asset-free without generating a score.
 - **A second render backend** — raylib only unless the core/render split is ever
   cashed in for a real reason.
 

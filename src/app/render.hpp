@@ -4,6 +4,7 @@
 #define TETRIS_APP_RENDER_HPP
 
 #include "app/juice.hpp"
+#include "app/music.hpp"
 #include "core/board.hpp"
 #include "core/highscores.hpp"
 #include "core/modes.hpp"
@@ -27,8 +28,18 @@ void drawFrame(const ModeController& mc, Screen screen, const ModeRecord& best,
                const Juice& juice, bool aiOn);
 
 // Draw the start menu (mode + difficulty selection) with the highlighted mode's
-// stored best. `modeSel`/`diffSel` are the currently highlighted indices.
-void drawMenu(int modeSel, int diffSel, const ModeRecord& best);
+// stored best and the current music track. `modeSel`/`diffSel` are the currently
+// highlighted indices.
+void drawMenu(int modeSel, int diffSel, const ModeRecord& best, Track music);
+
+// Draw the pause-menu overlay (Resume/Restart/Music/Quit). `sel` is the
+// highlighted row; `music` is the current track (shown on the Music row). Drawn
+// AFTER the scene blit so text stays crisp.
+void drawPauseMenu(int sel, Track music);
+
+// Draw the danger vignette (pulsing red edges) at intensity `danger` in [0,1].
+// Drawn on top of the blitted scene.
+void drawDangerVignette(float danger);
 
 }  // namespace tetris
 

@@ -331,6 +331,16 @@ bool Board::injectGarbage(int holeCol) {
     return true;
 }
 
+int Board::stackHeight() const {
+    // The highest row (smallest r) that holds any locked cell → height above floor.
+    for (int r = 0; r < kRows; ++r) {
+        for (int c = 0; c < kCols; ++c) {
+            if (grid_[r][c].has_value()) return kRows - r;
+        }
+    }
+    return 0;  // empty board
+}
+
 std::array<Cell, 4> Board::ghostCells() const {
     int ghostY = current_.y();
     while (!collides(current_, current_.x(), ghostY + 1, current_.rotation())) {
