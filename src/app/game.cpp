@@ -93,6 +93,7 @@ void Game::processMenuInput() {
     if (IsKeyPressed(KEY_UP)) modeSel_ = (modeSel_ + 2) % 3;
     if (IsKeyPressed(KEY_RIGHT)) diffSel_ = (diffSel_ + 1) % 4;
     if (IsKeyPressed(KEY_LEFT)) diffSel_ = (diffSel_ + 3) % 4;
+    if (IsKeyPressed(KEY_M)) cycleMusic(1);  // cycle the background music track
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) startSelectedMode();
 }
 
