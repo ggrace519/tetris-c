@@ -15,6 +15,7 @@ void Board::reset() {
     level_ = 1;
     combo_ = 0;
     maxCombo_ = 0;
+    piecesLocked_ = 0;
     lastTSpin_ = TSpin::None;
     lastClearCount_ = 0;
     fallSpeed_ = kStartFallSpeed;
@@ -177,6 +178,7 @@ void Board::lock() {
         score_ += static_cast<long>(bonus) * scoreLevel;
     }
 
+    ++piecesLocked_;  // a piece was just locked (any path: gravity/lock-delay/drop)
     current_ = next_;
     next_ = nextFromBag();
     // Fresh piece: clear lock/gravity timing and the reset counter.
@@ -312,8 +314,20 @@ bool Board::injectGarbage(int holeCol) {
     for (int c = 0; c < kCols; ++c) {
         bottom[c] = (c == holeCol) ? std::nullopt : GridCell(ShapeId::Garbage);
     }
-    // Garbage may now overlap the active piece; if so, the player is topping out.
-    if (collides(current_)) gameOver_ = true;
+
+    // The active (falling) piece rides UP with the world: the whole stack rose one
+    // row, so the piece's position relative to the surface is unchanged only if it
+    // moves up one row too. Without this, a piece resting on the floor (or anywhere
+    // in the lock-delay window) would be left embedded in the risen garbage and the
+    // collision check below would false-top-out on an otherwise-empty well (#2).
+    const int liftedY = current_.y() - 1;
+    if (!collides(current_, current_.x(), liftedY, current_.rotation())) {
+        current_.setPos(current_.x(), liftedY);
+    } else {
+        // Can't rise (blocked above, or already at the ceiling) AND the garbage now
+        // overlaps it → the well is genuinely full to the top: real top-out.
+        if (collides(current_)) gameOver_ = true;
+    }
     return true;
 }
 

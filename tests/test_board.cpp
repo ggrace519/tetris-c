@@ -28,6 +28,29 @@ TEST_CASE("fresh board: empty grid, level 1, score 0, not over") {
     CHECK(filled == 0);
 }
 
+TEST_CASE("piecesLocked increments on every lock path (gravity/lock-delay and hard drop)") {
+    // The app-side AI plan cache keys on piecesLocked(), so it must advance on ANY
+    // lock, not just hard drops. Verify both paths.
+    Board b(42);
+    CHECK(b.piecesLocked() == 0);
+
+    // (1) Lock-delay/gravity lock: rest a piece on the floor and let the timer run.
+    b.setActiveForTest(placed(ShapeId::O, 3, kRows - 2, 0));
+    b.step(0.01);                 // land it
+    REQUIRE(b.landed());
+    b.step(kLockDelay + 0.01);    // lock-delay expires → lock via step()
+    CHECK(b.piecesLocked() == 1);
+
+    // (2) Hard-drop lock: distance-0 hard drop locks immediately (no animation).
+    b.setActiveForTest(placed(ShapeId::O, 3, kRows - 2, 0));  // already resting
+    b.hardDrop();
+    CHECK(b.piecesLocked() == 2);
+
+    // reset() clears the counter.
+    b.reset();
+    CHECK(b.piecesLocked() == 0);
+}
+
 TEST_CASE("collision: walls, floor, and locked cells") {
     Board b(1);
     // O piece occupies (x+1,y),(x+2,y),(x+1,y+1),(x+2,y+1)

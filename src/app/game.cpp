@@ -38,6 +38,7 @@ void Game::startSelectedMode() {
     resultRecorded_ = false;
     aiEnabled_ = false;
     aiTimer_ = 0.0;
+    aiPlanPiece_ = -1;  // force a fresh plan on first AI tick
     ai_.setDifficulty(diff);  // AI skill follows the chosen difficulty
 }
 
@@ -75,9 +76,15 @@ void Game::processPlayInput() {
     if (aiEnabled_) return;  // AI drives; ignore manual piece input while on
 
     Board& board = mc_->board();
-    // Rotations — edge-triggered.
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_X)) board.rotate(1);
-    if (IsKeyPressed(KEY_Z)) board.rotate(-1);
+    // Rotations — edge-triggered, mutually exclusive. CW (Up/X) takes precedence so
+    // that pressing CW and CCW on the SAME frame applies a single rotation rather
+    // than rotate(1) then rotate(-1) (a net-zero double-rotate with spurious lock-
+    // delay resets / spin-flag churn).
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_X)) {
+        board.rotate(1);
+    } else if (IsKeyPressed(KEY_Z)) {
+        board.rotate(-1);
+    }
     // Hard drop — edge-triggered.
     if (IsKeyPressed(KEY_SPACE)) board.hardDrop();
 
@@ -141,43 +148,61 @@ void Game::updateAi(double dt) {
     if (aiTimer_ < ai_.decisionDelay()) return;
     aiTimer_ = 0.0;
 
-    // Compute the target placement for the current piece and take ONE action
-    // toward it per decision tick (so the demo is watchable): align rotation,
-    // then column, then hard drop.
-    const AiMove m = ai_.bestMove(board.grid(), board.current());
-    if (!m.valid) return;
+    // Compute the target placement ONCE per piece (bestMove re-rolls error + re-
+    // searches on every call — calling it each tick made low difficulties pick a
+    // fresh target per action, #4). Recompute whenever the active piece changes,
+    // detected via piecesLocked() so it covers gravity/lock-delay locks too — not
+    // just the hard drops this function initiates. Then step toward the fixed
+    // cached target: align rotation, then column, then hard drop.
+    if (board.piecesLocked() != aiPlanPiece_) {
+        aiPlan_ = ai_.bestMove(board.grid(), board.current());
+        aiPlanPiece_ = board.piecesLocked();
+    }
+    const AiMove m = aiPlan_;
+    if (!m.valid) return;  // no legal placement (board is topping out) — nothing to do
 
     if (board.current().rotation() != m.rotation) {
-        board.rotate(1);
-        return;
+        // Take one rotation step toward the target. If it succeeds, that's this
+        // tick's action. If the rotation is blocked (kick fails), DON'T keep
+        // retrying it every tick (#7) — fall through to column alignment / drop at
+        // the current rotation and let gravity/lock-delay resolve the piece.
+        if (board.rotate(1)) return;
     }
     const int dx = m.x - board.current().x();
     if (dx != 0) {
-        board.move(dx > 0 ? 1 : -1, 0);
-        return;
+        // If the horizontal move is blocked, stop trying to reach an unreachable
+        // column (#7) and just drop from here rather than stalling every tick.
+        if (board.move(dx > 0 ? 1 : -1, 0)) return;
     }
-    board.hardDrop();  // aligned → drop
+    board.hardDrop();  // aligned (or blocked) → drop; piecesLocked() will advance,
+                       // so the next tick recomputes the plan for the next piece.
 }
 
-void Game::updateGravity(float dt) {
+void Game::updateGravity(float dt, int linesBefore) {
     if (screen_ != Screen::Playing) return;
 
     Board& board = mc_->board();
-    const int linesBefore = board.linesCleared();
-    if (aiEnabled_) updateAi(dt);
-    handleHorizontal(dt);
-
-    // Soft drop: while Down is held, step at a faster cadence (kSoftDropRate rows/s)
-    // in addition to gravity. Each extra move resets the gravity timer inside step
-    // via move()'s lock-delay reset; the piece still respects lock delay at the bottom.
-    if (IsKeyDown(KEY_DOWN)) {
-        softDropTimer_ += dt;
-        while (softDropTimer_ >= kSoftDropInterval) {
-            softDropTimer_ -= kSoftDropInterval;
-            board.move(0, 1);  // no-op if resting; lock delay still applies via step()
-        }
+    if (aiEnabled_) {
+        // AI drives the piece — ignore ALL manual piece input, including the held
+        // horizontal (DAS/ARR) and soft-drop paths. Previously only the edge-
+        // triggered rotate/hard-drop in processPlayInput were suppressed, so held
+        // arrow keys still moved the piece while the demo played (#6).
+        updateAi(dt);
     } else {
-        softDropTimer_ = 0.0;
+        handleHorizontal(dt);
+
+        // Soft drop: while Down is held, step at a faster cadence in addition to
+        // gravity. Each extra move resets the gravity timer inside step via move()'s
+        // lock-delay reset; the piece still respects lock delay at the bottom.
+        if (IsKeyDown(KEY_DOWN)) {
+            softDropTimer_ += dt;
+            while (softDropTimer_ >= kSoftDropInterval) {
+                softDropTimer_ -= kSoftDropInterval;
+                board.move(0, 1);  // no-op if resting; lock delay still applies via step()
+            }
+        } else {
+            softDropTimer_ = 0.0;
+        }
     }
 
     // Gravity + lock delay handled by the core step().
@@ -215,8 +240,14 @@ void Game::run() {
         if (screen_ == Screen::Menu) {
             processMenuInput();
         } else {
+            // Sample the line count BEFORE input so a Space-to-lock clear inside
+            // processPlayInput (instant lock when the piece is already resting)
+            // still triggers juice — updateGravity compares against this (#5).
+            const int linesBefore = (screen_ == Screen::Playing && mc_)
+                                        ? mc_->board().linesCleared()
+                                        : 0;
             processPlayInput();
-            updateGravity(dt);
+            updateGravity(dt, linesBefore);
         }
 
         BeginDrawing();
