@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "app/audio.hpp"
 #include "app/juice.hpp"
 #include "app/render.hpp"
 #include "core/ai.hpp"
@@ -36,6 +37,7 @@ private:
     std::string savePath_;
     bool resultRecorded_ = false;  // guards recordResult() to once per game end
     Juice juice_;
+    Audio audio_;
 
     // DAS/ARR horizontal auto-shift state.
     int dasDir_ = 0;         // -1 left, +1 right, 0 none (last resolved direction)
