@@ -89,6 +89,14 @@ void Jukebox::init() {
     if (stream_.buffer == nullptr) return;  // no device
     SetAudioStreamVolume(stream_, volume_);
     ready_ = true;
+
+    // Start playback if a track is on by default (so music plays without the
+    // player having to open a menu). select() handles Play/Stop + reset.
+    if (track_ != Track::Off) {
+        const Track t = track_;
+        track_ = Track::Off;  // force select() to see a real change and start it
+        select(t);
+    }
 }
 
 void Jukebox::fill(short* out, int frames) {

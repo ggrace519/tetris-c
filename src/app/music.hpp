@@ -37,7 +37,7 @@ private:
 
     AudioStream stream_{};
     bool ready_ = false;
-    Track track_ = Track::Off;
+    Track track_ = Track::Calm;  // music on by default (selectable / mutable)
     float volume_ = 0.5f;
     // One synthesized loop buffer per real track (index by Track-1; Off has none).
     std::array<std::vector<short>, kTrackCount - 1> loops_{};

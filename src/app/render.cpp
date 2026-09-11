@@ -313,10 +313,10 @@ void drawMenu(int modeSel, int diffSel, const ModeRecord& best, Track music) {
         DrawText(buf, 60, 425, 18, rl(kColCyan));
     }
 
-    // Current music track (change it in the pause menu during play).
+    // Current music track — press M to cycle it here on the start screen.
     {
-        char buf[48];
-        std::snprintf(buf, sizeof(buf), "Music: %s", trackName(music));
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "Music: %s   (M to change)", trackName(music));
         DrawText(buf, 60, 450, 16, rl(kColPurple));
     }
 
