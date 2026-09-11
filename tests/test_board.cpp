@@ -28,6 +28,24 @@ TEST_CASE("fresh board: empty grid, level 1, score 0, not over") {
     CHECK(filled == 0);
 }
 
+TEST_CASE("stackHeight measures locked rows above the floor, ignoring the active piece") {
+    Board b(42);
+    // Empty board (active piece present at spawn) → height 0.
+    CHECK(b.stackHeight() == 0);
+
+    // One locked cell on the bottom row → height 1.
+    b.setCellForTest(0, kRows - 1, ShapeId::I);
+    CHECK(b.stackHeight() == 1);
+
+    // A locked cell 5 rows up (row kRows-5) → height 5, regardless of gaps below.
+    b.setCellForTest(3, kRows - 5, ShapeId::T);
+    CHECK(b.stackHeight() == 5);
+
+    // A cell at the very top row → height kRows.
+    b.setCellForTest(9, 0, ShapeId::O);
+    CHECK(b.stackHeight() == kRows);
+}
+
 TEST_CASE("piecesLocked increments on every lock path (gravity/lock-delay and hard drop)") {
     // The app-side AI plan cache keys on piecesLocked(), so it must advance on ANY
     // lock, not just hard drops. Verify both paths.
