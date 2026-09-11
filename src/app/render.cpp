@@ -1,5 +1,6 @@
 #include "app/render.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 
@@ -14,6 +15,25 @@ inline ::Color rl(const tetris::Color& c) { return ::Color{c.r, c.g, c.b, c.a}; 
 // Playfield draw offset (set by screen shake each frame).
 int gOffX = 0, gOffY = 0;
 
+// Draw a single block with a vertical gradient sheen and a beveled edge (light
+// top-left, dark bottom-right) so it reads as a 3D tile instead of a flat rect.
+void drawBlock(int px, int py, int size, ::Color base) {
+    const ::Color top = ColorBrightness(base, 0.28f);     // sheen highlight
+    const ::Color bottom = ColorBrightness(base, -0.10f);  // slightly darker foot
+    DrawRectangleGradientV(px, py, size, size, top, bottom);
+
+    // Bevel: a light inner edge along top+left, a dark inner edge along bottom+right.
+    const ::Color light = ColorBrightness(base, 0.55f);
+    const ::Color dark = ColorBrightness(base, -0.45f);
+    const int b = size >= 24 ? 3 : 2;  // bevel thickness scales a touch with cell size
+    DrawRectangle(px, py, size, b, light);                 // top
+    DrawRectangle(px, py, b, size, light);                 // left
+    DrawRectangle(px, py + size - b, size, b, dark);        // bottom
+    DrawRectangle(px + size - b, py, b, size, dark);        // right
+    // Thin outer seam so adjacent cells stay visually separated.
+    DrawRectangleLines(px, py, size, size, rl(kColDarkBg));
+}
+
 void drawCell(int col, int row, const tetris::Color& color, bool ghost = false) {
     const int px = col * kCellPx + gOffX;
     const int py = row * kCellPx + gOffY;
@@ -21,14 +41,18 @@ void drawCell(int col, int row, const tetris::Color& color, bool ghost = false) 
         // Outline only for the ghost.
         DrawRectangleLines(px, py, kCellPx, kCellPx, rl(color));
     } else {
-        DrawRectangle(px, py, kCellPx, kCellPx, rl(color));
-        DrawRectangleLines(px, py, kCellPx, kCellPx, rl(kColDarkBg));
+        drawBlock(px, py, kCellPx, rl(color));
     }
 }
 
 void drawPlayfield(const Board& board) {
-    // Background + grid lines (with shake offset).
-    DrawRectangle(gOffX, gOffY, kPlayW, kPlayH, rl(kColBlack));
+    // Background: a subtle vertical gradient whose top edge warms slightly as the
+    // level climbs (a quiet reactive-background nod). Darkest at the bottom.
+    const float lvl = static_cast<float>(board.level() - 1);
+    const ::Color bgTop = ColorBrightness(
+        ::Color{static_cast<unsigned char>(std::min(18 + static_cast<int>(lvl) * 4, 60)),
+                18, 22, 255}, 0.10f);
+    DrawRectangleGradientV(gOffX, gOffY, kPlayW, kPlayH, bgTop, rl(kColBlack));
     for (int x = 0; x <= kCols; ++x)
         DrawLine(x * kCellPx + gOffX, gOffY, x * kCellPx + gOffX, kPlayH + gOffY, rl(kColGridLine));
     for (int y = 0; y <= kRows; ++y)
@@ -90,8 +114,7 @@ void drawNextPreview(const Board& board) {
     for (const Cell& c : n.cellsAt(0, 0, 0)) {
         const int px = panelX + c.x * cell;
         const int py = boxY + c.y * cell;
-        DrawRectangle(px, py, cell, cell, rl(n.color()));
-        DrawRectangleLines(px, py, cell, cell, rl(kColDarkBg));
+        drawBlock(px, py, cell, rl(n.color()));  // same beveled look as the field
     }
 }
 
