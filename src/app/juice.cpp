@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "app/reasings.h"  // static-inline easing curves (raylib/reasings, zlib)
+
 namespace tetris {
 
 namespace {
@@ -50,7 +52,15 @@ void Juice::update(float dt) {
             shakeTimer_ = 0.0;
             shakeX_ = shakeY_ = 0.0f;
         } else {
-            const float decay = static_cast<float>(shakeTimer_ / shakeDuration_);
+            // Eased shake falloff: the amplitude HOLDS high early then drops off at
+            // the end ("punchy start, smooth settle") — i.e. a curve that stays
+            // ABOVE the linear ramp. reasings ease(t,b,c,d): t=time, b=start,
+            // c=change, d=duration. Feeding the *remaining* time into EaseCubicOut
+            // (0→1 over remaining) yields exactly that: decay = 1.0 at full
+            // remaining, ~0.88 at the midpoint (vs 0.5 linear), 0 at timeout.
+            const float remaining = static_cast<float>(shakeTimer_);
+            const float duration = static_cast<float>(shakeDuration_);
+            const float decay = EaseCubicOut(remaining, 0.0f, 1.0f, duration);
             const float amp = shakeIntensity_ * decay;
             shakeX_ = frand(-amp, amp);
             shakeY_ = frand(-amp, amp);

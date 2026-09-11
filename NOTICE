@@ -9,6 +9,12 @@ which retain their own licenses:
     Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
     https://www.raylib.com/
 
+  * reasings (src/app/reasings.h) — zlib/libpng license
+    Easing functions from the raylib examples (raysan5), based on Robert
+    Penner's easing equations. Vendored into src/app/ for the animation curves.
+    Copyright (c) 2015-2026 Ramon Santamaria (@raysan5)
+    https://github.com/raysan5/raylib
+
   * raylib-quickstart (build scaffold: premake config, resource_dir.h,
     and the initial project template) — CC0 1.0 Universal (public domain)
     Jeffery Myers

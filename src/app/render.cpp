@@ -6,6 +6,8 @@
 
 #include "raylib.h"
 
+#include "app/reasings.h"  // static-inline easing curves (raylib/reasings, zlib)
+
 namespace tetris {
 namespace {
 
@@ -182,7 +184,12 @@ void drawCenterMessage(const char* title, const char* subtitle) {
 
 void drawParticles(const Juice& juice) {
     for (const Particle& p : juice.particles()) {
-        const float a = p.maxLife > 0 ? (p.life / p.maxLife) : 0.0f;
+        // Eased alpha fade: particles HOLD their brightness a touch longer, then
+        // fall off at the end — i.e. alpha stays ABOVE the linear line. Feeding the
+        // remaining-life fraction into EaseQuadOut (0→1 over remaining life) gives
+        // that: a=1.0 at birth, ~0.75 at half-life (vs 0.5 linear), 0 at death.
+        const float lifeFrac = p.maxLife > 0 ? (p.life / p.maxLife) : 0.0f;  // 1→0
+        const float a = EaseQuadOut(lifeFrac, 0.0f, 1.0f, 1.0f);
         Color c = p.color;
         DrawRectangle(static_cast<int>(p.x), static_cast<int>(p.y), 4, 4,
                       ::Color{c.r, c.g, c.b, static_cast<unsigned char>(a * 255)});
