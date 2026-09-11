@@ -9,6 +9,8 @@
 
 #include "app/audio.hpp"
 #include "app/juice.hpp"
+#include "app/music.hpp"
+#include "app/postfx.hpp"
 #include "app/render.hpp"
 #include "core/ai.hpp"
 #include "core/highscores.hpp"
@@ -24,9 +26,13 @@ public:
 private:
     void processMenuInput();
     void processPlayInput();
+    void processPauseInput();  // pause-menu navigation
     void updateGravity(float dt, int linesBefore);
     void startSelectedMode();
     void recordResult();  // submit current run to high scores + save (once per end)
+    void openPause();         // enter the pause menu
+    void cycleMusic(int dir); // change the selected music track (Options / menu)
+    void updateDanger(double dt);  // ease the danger level + heartbeat
 
     Screen screen_ = Screen::Menu;
     int modeSel_ = 0;  // 0..2  Marathon/Sprint/Ultra
@@ -38,6 +44,16 @@ private:
     bool resultRecorded_ = false;  // guards recordResult() to once per game end
     Juice juice_;
     Audio audio_;
+    PostFx postfx_;
+    Jukebox music_;
+
+    // Pause menu: Enter (or P) opens it during play; arrows navigate, Enter picks.
+    int pauseSel_ = 0;  // 0 Resume, 1 Restart, 2 Music, 3 Quit to menu
+
+    // Danger state: smoothed [0,1] driven by Board::stackHeight(), for the red
+    // vignette + heartbeat. Kept on Game so it eases across frames.
+    float danger_ = 0.0f;
+    double heartbeatTimer_ = 0.0;
 
     // DAS/ARR horizontal auto-shift state.
     int dasDir_ = 0;         // -1 left, +1 right, 0 none (last resolved direction)

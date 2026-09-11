@@ -1,5 +1,7 @@
 #include "app/game.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <random>
 
 #include "raylib.h"
@@ -11,12 +13,53 @@ Game::Game() {
     InitWindow(kWinW, kWinH, "tetris-c");
     SetTargetFPS(60);
 
-    // Procedural SFX (no asset files). Safe if no audio device is present.
+    // Procedural SFX + music (no asset files). Safe if no audio device is present.
     audio_.init();
+    music_.init();
+
+    // Post-processing pipeline (scene render target + bloom). Needs the GL context.
+    postfx_.init(kWinW, kWinH);
 
     // High-score file next to the executable's working dir.
     savePath_ = "highscores.dat";
     highScores_.load(savePath_);
+}
+
+void Game::openPause() {
+    screen_ = Screen::Paused;
+    pauseSel_ = 0;
+    music_.setVolume(0.25f);  // duck music while paused
+}
+
+void Game::cycleMusic(int dir) {
+    const int next = ((static_cast<int>(music_.current()) + dir) % kTrackCount + kTrackCount) % kTrackCount;
+    music_.select(static_cast<Track>(next));
+    audio_.play(Sfx::Rotate);  // a small confirmation blip
+}
+
+void Game::updateDanger(double dt) {
+    // Target danger ramps in over the top ~40% of the well: 0 below 60% height,
+    // 1 at the ceiling. Only while actively playing; eases to 0 otherwise.
+    float target = 0.0f;
+    if (screen_ == Screen::Playing && mc_) {
+        const float frac = static_cast<float>(mc_->board().stackHeight()) / static_cast<float>(kRows);
+        target = std::clamp((frac - 0.6f) / 0.4f, 0.0f, 1.0f);
+    }
+    // Exponential smoothing so it swells/fades rather than snapping.
+    const float rate = 4.0f;
+    danger_ += (target - danger_) * std::min(1.0f, static_cast<float>(dt) * rate);
+
+    // Heartbeat: a low thump whose period shortens as danger rises.
+    if (danger_ > 0.25f && screen_ == Screen::Playing) {
+        heartbeatTimer_ += dt;
+        const double period = 1.0 - 0.55 * danger_;  // ~1.0s → ~0.45s
+        if (heartbeatTimer_ >= period) {
+            heartbeatTimer_ = 0.0;
+            audio_.play(Sfx::SoftDrop, 0.5f);  // reuse a low tick as a heartbeat pulse
+        }
+    } else {
+        heartbeatTimer_ = 0.0;
+    }
 }
 
 void Game::recordResult() {
@@ -64,8 +107,12 @@ void Game::processPlayInput() {
         startSelectedMode();
         return;
     }
-    if (IsKeyPressed(KEY_P) && (screen_ == Screen::Playing || screen_ == Screen::Paused)) {
-        screen_ = (screen_ == Screen::Paused) ? Screen::Playing : Screen::Paused;
+    // Open the pause menu — Enter (primary) or P. Return immediately so the same
+    // Enter press isn't also seen by the pause-menu handler this frame (it would
+    // instantly pick "Resume" and the pause would flicker).
+    if (screen_ == Screen::Playing &&
+        (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_P))) {
+        openPause();
         return;
     }
 
@@ -97,6 +144,43 @@ void Game::processPlayInput() {
     if (board.gameOver()) {
         screen_ = Screen::GameOver;
         recordResult();
+    }
+}
+
+void Game::processPauseInput() {
+    // Pause menu: 0 Resume · 1 Restart · 2 Music (left/right cycles) · 3 Quit.
+    // Enter or P also resumes directly (quick unpause).
+    if (IsKeyPressed(KEY_P)) {
+        screen_ = Screen::Playing;
+        music_.setVolume(0.5f);
+        return;
+    }
+    if (IsKeyPressed(KEY_DOWN)) pauseSel_ = (pauseSel_ + 1) % 4;
+    if (IsKeyPressed(KEY_UP)) pauseSel_ = (pauseSel_ + 3) % 4;
+
+    // Music row: left/right cycles the track live (audible immediately).
+    if (pauseSel_ == 2) {
+        if (IsKeyPressed(KEY_RIGHT)) cycleMusic(1);
+        if (IsKeyPressed(KEY_LEFT)) cycleMusic(-1);
+    }
+
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+        switch (pauseSel_) {
+            case 0:  // Resume
+                screen_ = Screen::Playing;
+                music_.setVolume(0.5f);
+                break;
+            case 1:  // Restart
+                startSelectedMode();
+                break;
+            case 2:  // Music: Enter also advances the track
+                cycleMusic(1);
+                break;
+            case 3:  // Quit to menu
+                screen_ = Screen::Menu;
+                music_.setVolume(0.5f);
+                break;
+        }
     }
 }
 
@@ -259,8 +343,12 @@ void Game::run() {
     while (!WindowShouldClose()) {  // Esc or window close
         const float dt = GetFrameTime();
 
+        music_.update();  // keep the stream fed regardless of screen
+
         if (screen_ == Screen::Menu) {
             processMenuInput();
+        } else if (screen_ == Screen::Paused) {
+            processPauseInput();  // game logic frozen; only the menu takes input
         } else {
             // Sample the line count BEFORE input so a Space-to-lock clear inside
             // processPlayInput (instant lock when the piece is already resting)
@@ -272,13 +360,27 @@ void Game::run() {
             updateGravity(dt, linesBefore);
         }
 
+        // Danger state: ease `danger_` toward the current stack-height fraction and
+        // rise a heartbeat as it climbs (only while actively playing).
+        updateDanger(dt);
+
+        // Draw the scene into the post-fx render target, then blit (with bloom
+        // during play). The crisp pause overlay + danger vignette are drawn AFTER
+        // the blit so text stays sharp and the vignette isn't blurred by bloom.
         BeginDrawing();
+        ClearBackground(::Color{kColBlack.r, kColBlack.g, kColBlack.b, kColBlack.a});
+        postfx_.begin();
         if (screen_ == Screen::Menu || !mc_) {
             const GameMode m = static_cast<GameMode>(modeSel_);
-            drawMenu(modeSel_, diffSel_, highScores_.record(m));
+            drawMenu(modeSel_, diffSel_, highScores_.record(m), music_.current());
         } else {
             drawFrame(*mc_, screen_, highScores_.record(mc_->mode()), juice_, aiEnabled_);
         }
+        postfx_.end(/*bloom=*/screen_ != Screen::Menu);
+
+        // Overlays on top of the blitted scene.
+        if (screen_ != Screen::Menu && mc_) drawDangerVignette(danger_);
+        if (screen_ == Screen::Paused) drawPauseMenu(pauseSel_, music_.current());
         EndDrawing();
     }
     CloseWindow();

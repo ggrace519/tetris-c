@@ -194,3 +194,38 @@ So yes, the same physical descent scores differently by input path — that is t
 intended distinction (skill/intent vs. passive falling), not an oversight. It is
 stricter than python-tetris (which scored the passive-fall case) and is covered by
 tests: gravity-descent → None (regression), and hard-drop-after-spin → scored.
+
+## ADR-0007 — Ship audio (procedural SFX + selectable synthesized music loops) and a post-FX visual layer
+
+**Date:** 2026-09-11 · **Status:** Accepted
+
+**Context.** PRD §8 left "whether to add SFX/music" as an uncommitted Tier-3
+decision, and PRD §2 lists **procedural *music generation*** as a non-goal ("no
+clear user value"). Greg subsequently asked for a pause menu, selectable
+background music, and "more graphics." The game had zero audio and drew flat to
+the backbuffer.
+
+**Decision.**
+1. **Audio is in.** SFX are **synthesized in memory** (no asset files) — see the
+   earlier audio-engine work (`app/synth`, `app/audio`).
+2. **Background music is synthesized *loops*, not a generated score.** Each track
+   (Calm / Classic / Fast) is a fixed, hand-composed note sequence rendered to a
+   PCM loop buffer at startup and streamed via one `AudioStream`. This is
+   authored, deterministic material — **not** the procedural-*generation* PRD §2
+   rejects (no runtime composition/randomisation of a score). It stays asset-free.
+   Selectable + mutable from the pause menu and shown on the start menu. **PRD §2
+   is amended** to scope the non-goal to *generated scores*, explicitly allowing
+   synthesized authored loops.
+3. **Post-processing visual layer.** The scene renders into one
+   `RenderTexture2D` and is blitted through an embedded **bloom** shader
+   (`app/postfx`), enabling neon glow; a **danger vignette** (pulsing red edges,
+   driven by the new `Board::stackHeight()`) and an **animated menu background**
+   layer on top. All app-layer; `core` gained only the plain-data `stackHeight()`
+   accessor (ADR-0001 preserved).
+4. **Pause is a menu** (Resume / Restart / Music / Quit), opened with **Enter** (or
+   P), navigable with arrows; game logic is frozen and music ducks while paused.
+
+**Consequences.** The repo remains **zero-asset** (no `.wav`/`.ogg`/`.ttf`).
+Audio/GL init is guarded so a headless/no-device environment no-ops cleanly (CI
+still builds/tests without a device). The bloom shader is GLSL 330 desktop-only,
+consistent with the existing raylib desktop target.
