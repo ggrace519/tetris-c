@@ -106,9 +106,13 @@ includes a raylib header.
 
 - Two long-lived branches: **`develop`** (integration/staging) and **`main`**
   (blessed). **No PR ever targets `main` directly** — every feature/fix branch
-  merges into `develop`. Promotion `develop → main` is a separate PR, opened only
-  when Greg says develop is verified, merged as a merge commit / fast-forward
+  merges into `develop`. Promotion `develop → main` is a separate PR (auto-opened
+  by the promote workflow, below), merged as a merge commit / fast-forward
   (never squash), and tagged on main.
+- `.github/workflows/promote.yml` opens and maintains that promotion PR on its
+  own after `CI` passes on a develop push. It calls the shared
+  `ggrace519/.github` workflow at `@v1`. Having the PR open isn't approval:
+  merging it is still Greg's call.
 - Never commit directly to `main` or `develop`; branch from `develop` first
   (`<type>/<kebab-summary>`). Branch and commit freely; **pause and ask before
   pushing or opening a PR.**
