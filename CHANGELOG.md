@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Infrastructure
+- A `promote` workflow now opens the single `develop` → `main` promotion pull
+  request after CI passes on `develop`, and refreshes its commit and file
+  summary on every later develop push. It uses the shared `ggrace519/.github`
+  workflow.
+
 ### Added
 - **Pause menu, selectable background music, and a post-FX visual layer**
   (ADR-0007):
