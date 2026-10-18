@@ -25,7 +25,7 @@ directly without a window.
         └───────────────────┬──────────────────────┘
                             │  depends on ↓ (one way only)
         ┌───────────────────▼──────────────────────┐
-        │  core/ (pure C++17, no external deps)      │
+        │  core/ (pure C++20, no external deps)      │
         │  grid · piece · rules · scoring · modes     │
         └───────────────────▲──────────────────────┘
                             │  drives directly
@@ -46,15 +46,18 @@ Ported 1:1 from `python-tetris`, C++-idiomatic. Sizes are targets (Greg's
 
 | C++ file | Ports from | Responsibility |
 |---|---|---|
-| `src/core/constants.h` | `settings.py` | Board dims, cell size, colors (as plain RGBA structs, no raylib), tetromino shape tables, kick tables, scoring tables, timing constants. Pure data. |
-| `src/core/piece.h/.cpp` | `piece.py` | `Piece`: shape id, rotation (0–3), x/y; `cells()` returns occupied board cells; `kicks()` returns the kick list for its shape class. |
-| `src/core/board.h/.cpp` | `board.py` | `Board`: the 10×20 grid, active + next piece, score/level/lines/fall-speed, game-over. Owns all rules: `collides`, `move`, `rotate`, `hardDrop`, `lock`, `clearLines`, `ghostCells`, 7-bag refill. |
-| `src/core/rng.h` | (Python `random`) | Seedable RNG wrapper (`std::mt19937`) so 7-bag shuffles are deterministic in tests. |
-| `src/core/modes.h/.cpp` | `modes.py` | `GameMode` enum + `ModeController` wrapping `Board`: Marathon (40), Sprint (10, timed), Ultra (garbage injection by difficulty). |
-| `src/app/game.h/.cpp` | `app.py` | Owns the raylib window, the loop, screen state (playing/paused/over), the gravity accumulator, input→core mapping. |
-| `src/app/render.h/.cpp` | `app.py` draw_* | Draw playfield, locked blocks, active piece, ghost, next preview, HUD (score/level/lines), center messages. |
-| `src/app/input.h/.cpp` | `app.py` handle_keydown | Key mapping. Tier 2 expands this to DAS/ARR/SOCD. |
-| `src/main.cpp` | `tetris.py` | Thin entry point: construct `Game`, run. |
+| `src/core/constants.hpp` | `settings.py` | Board dims, colors (as plain RGBA structs, no raylib), tetromino shape tables, kick tables, scoring tables, timing constants. Pure data. **Done.** |
+| `src/core/piece.{hpp,cpp}` | `piece.py` | `Piece`: shape id, rotation (0–3), x/y; `cells()` returns occupied board cells; `kicks()` returns the kick list for its shape class. **Done.** |
+| `src/core/board.{hpp,cpp}` | `board.py` | `Board`: the 10×20 grid, active + next piece, score/level/lines/fall-speed, game-over. Owns all rules: `collides`, `move`, `rotate`, `hardDrop`, `lock`, `clearLines`, `ghostCells`, 7-bag refill. **Done.** |
+| `src/core/rng.hpp` | (Python `random`) | Seedable RNG wrapper (`std::mt19937_64`) so 7-bag shuffles are deterministic in tests. **Done.** |
+| `src/core/modes.{hpp,cpp}` | `modes.py` | `GameMode` enum + `ModeController` wrapping `Board`: Marathon (40), Sprint (10, timed), Ultra (garbage injection by difficulty). *Tier 2.* |
+| `src/app/game.{hpp,cpp}` | `app.py` | Owns the raylib window, the loop, screen state (playing/paused/over), the gravity accumulator, and input→core mapping (input lives here in Tier 1, not a separate file). **Done.** |
+| `src/app/render.{hpp,cpp}` | `app.py` draw_* | Draw playfield, locked blocks, active piece, ghost, next preview, HUD (score/level/lines), center messages. **Done.** |
+| `src/main.cpp` | `tetris.py` | Thin entry point: construct `Game`, run. **Done.** |
+
+> Input is handled inside `game.cpp` (Tier 1, discrete keys). If Tier 2's DAS/ARR
+> state grows the file past readability, split it into `src/app/input.{hpp,cpp}`
+> then — premake's `src/**` glob picks new files up automatically.
 
 ### Colors without raylib
 `core` defines `struct Color { unsigned char r,g,b,a; };` and the piece colors as
@@ -248,14 +251,19 @@ make                                     # build the game → bin/Debug/tetris-c
 ./bin/Debug/tetris-c                     # run
 ```
 
-`premake5.lua` is extended to produce **two** artifacts from a shared `core`:
-- **game** — `src/core/*.cpp` + `src/app/*.cpp` + `src/main.cpp`, linked against the
-  vendored raylib.
-- **tests** — `src/core/*.cpp` + `tests/*.cpp` (doctest), **no raylib link** (core
-  is raylib-free, so tests build and run headlessly). Add a `make test`-style
-  target (a premake config or a thin top-level `make` rule) that builds and runs it.
+Two artifacts share the `core` sources:
+- **game** — the quickstart's premake project builds `src/**` (core + app + main)
+  and links the vendored raylib. `src/core/*.cpp` and `src/app/*.cpp` are picked up
+  automatically by premake's recursive `src/**` glob — no premake edit needed to add
+  core/app files.
+- **tests** — a **standalone `tests/tests.mk`** (hand-written, invoked as
+  `make -f tests/tests.mk`) compiles only `src/core/*.cpp` + `tests/*.cpp` (doctest)
+  with g++, **no raylib link** (core is raylib-free, so tests build and run
+  headlessly). It is a separate file rather than a premake/`make test` target
+  because the top-level `Makefile` is premake-generated and gitignored, so a rule
+  added there would be lost on regeneration.
 
-Standard flags: `-std=c++17 -Wall -Wextra`; coverage via `--coverage` for the
+Standard flags: `-std=c++20 -Wall -Wextra`; coverage via `--coverage` for the
 `coverage` target.
 
 **raylib link libraries** (the quickstart's generated makefiles already supply
@@ -318,6 +326,13 @@ and re-check before porting, as they may advance):
 | T-spin detection | `innovation/t-spin` | `40c94f5` | 3 |
 | juice (shake/particles) | `innovation/juice` | `0cab591` | 3 |
 | heuristic AI | `innovation/ai` | `d285bb9` | 3 |
+
+> **AI design boundary (not a bug):** `TetrisAI::bestMove` searches rotation ×
+> column with a straight vertical drop. Tuck/slide placements (moving a piece
+> sideways *under* an overhang after it has dropped) are therefore unreachable by
+> the AI — the same limitation as python-tetris's AI. This is an intentional scope
+> boundary, not a defect; a fuller search (BFS over reachable resting states)
+> would be a future enhancement, not parity work.
 
 > The port source was read on `innovation/modes` (which contains `modes.py`). Note
 > local `main` (`6224714`) was **ahead of** `origin/main` (`1e2c204`) and not

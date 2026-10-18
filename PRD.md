@@ -30,7 +30,9 @@ easy to keep working on.
   three-layer separation `python-tetris` already uses).
 - Ship the base game first (Tier 1), then port the polished "innovation"
   features that `python-tetris` proved out on branches (Tiers 2–3), each gated.
-- Single `apt` dependency for the graphics stack (`libraylib-dev`).
+- Minimal build friction: raylib is **vendored and built locally** via the
+  raylib-quickstart scaffold (premake5 → make) — no system install, no CMake.
+  (Debian doesn't package raylib; see DECISIONS ADR-0003.)
 
 ### Non-goals (explicitly out of scope)
 These are carried over from `python-tetris`'s **killed-ideas** list — already
@@ -39,7 +41,10 @@ decision:
 - **Multiplayer / online / netcode** — needs a server and infra.
 - **Machine-learning AI** — heuristic AI is sufficient and more transparent.
 - **Mobile / touch port** — different UI and build pipeline.
-- **Procedural music generation** — no clear user value here.
+- **Procedural music *generation*** (runtime-composed/randomised scores) — no clear
+  user value. *Amended by ADR-0007:* synthesized **authored loops** (fixed,
+  hand-composed chiptune tracks rendered to PCM at startup, selectable) ARE in
+  scope — they keep the repo asset-free without generating a score.
 - **A second render backend** — raylib only unless the core/render split is ever
   cashed in for a real reason.
 
@@ -155,8 +160,8 @@ T-spin detection & scoring, juice (shake/particles), heuristic AI/demo, settings
   equivalently.
 - **Feel:** stable 60 FPS, responsive input, no lock/clear stutter (verified by
   running the real game, not asserted).
-- **Maintainability:** core has zero backend dependency; one apt dependency to
-  build; modules within Greg's size limits.
+- **Maintainability:** core has zero backend dependency; raylib is vendored (no
+  system install to build); modules within Greg's size limits.
 
 ---
 

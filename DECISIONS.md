@@ -31,7 +31,7 @@ input, and audio live in an `app` layer that depends on `core` and on raylib.
 
 ---
 
-## ADR-0002 — Language C++17; build via the raylib-quickstart scaffold (premake5 → make)
+## ADR-0002 — Language C++20; build via the raylib-quickstart scaffold (premake5 → make)
 
 **Date:** 2026-09-10 · **Status:** Accepted (supersedes the original
 "hand-written Makefile" decision)
@@ -43,7 +43,7 @@ template (raylib-extras, CC0), which vendors raylib and drives the build with a
 bundled **premake5** that generates makefiles. A working `libraylib.a` is already
 built under `bin/Debug/`.
 
-**Decision.** Use **C++17**, and adopt the **quickstart's premake5 → make build**
+**Decision.** Use **C++20**, and adopt the **quickstart's premake5 → make build**
 rather than hand-rolling a Makefile or introducing CMake. premake5 ships in the
 repo (`build/premake5`), so there is no build-tool install step. Game sources are
 `.cpp` (the template's `src/main.c` is replaced by our code).
@@ -120,7 +120,8 @@ research file so the upgrade needs no re-derivation.
 
 ## ADR-0005 — Test framework: doctest (single-header)
 
-**Date:** 2026-09-10 · **Status:** Proposed (pending first test run)
+**Date:** 2026-09-10 · **Status:** Accepted (first test run passed: 21 cases /
+127 assertions, 2026-09-10)
 
 **Context.** doctest, Catch2, and gtest are all in Debian apt (doctest 2.4.11,
 Catch2 3.7.1, gtest 1.16). The core is pure C++ with simple assertions; compile
@@ -131,6 +132,100 @@ speed and zero setup matter for a solo project.
 only; the app layer is verified by running the real game.
 
 **Consequences.**
-- No test-framework install step; `make test` builds and runs core tests.
-- Status stays **Proposed** until the first `make test` actually runs and passes
-  (Greg's rule: a documented command that hasn't run is not verified).
+- No test-framework install step; `make -f tests/tests.mk` builds and runs the
+  core tests (a standalone makefile, not a premake target — the top-level
+  `Makefile` is generated and gitignored).
+- Verified: the first run passed (21 cases / 127 assertions), so this is Accepted.
+
+---
+
+## ADR-0006 — T-spin: port python-tetris's simplified 3-corner detection (no SRS)
+
+**Date:** 2026-09-10 · **Status:** Accepted (per ADR-0004: "decide then, in a new
+ADR")
+
+**Context.** ADR-0004 kept python-tetris's **simplified symmetric kick table**
+(not per-transition SRS). The guideline T-spin mini→full upgrade rule keys off
+"the rotation used the (1,2) kick — the last SRS offset", which has nothing to
+bind to under the simplified table (no per-transition structure, no (1,2)
+entry). So a guideline-faithful T-spin is not implementable without first doing
+the SRS upgrade. The decided scope is **parity with python-tetris**, whose
+`innovation/t-spin` branch shipped a working *simplified* 3-corner detector.
+
+**Decision.** Port python-tetris's **simplified 3-corner T-spin** as-is:
+- Qualifies only if the piece is a **T** and the **last successful move was a
+  rotation** (track the kick offset used as a `spinAxis`; cleared by any
+  translation/gravity move).
+- Count the four corners of the T's **3×3 bounding box** that are blocked (out of
+  bounds or filled). **≥3 blocked → T-spin; exactly 2 blocked (with a rotation)
+  → T-spin mini.**
+- Scoring uses **python-tetris's own values** (mini 100, single 200, double 400,
+  triple 800) × level — NOT the higher guideline numbers. Parity wins.
+
+This is a **degraded** T-spin (no proper mini/full front-corner distinction, no
+kick-point upgrade) but it is self-consistent and matches the parity target.
+
+**Consequences.**
+- No SRS upgrade needed for Tier 3; T-spins work on the simplified kicks.
+- If guideline-correct T-spins (proper mini/full, T-spin triple via the (1,2)
+  kick) are ever wanted, that requires the SRS upgrade from ADR-0004/TDD §9 first,
+  and would supersede this ADR. The exact SRS tables and rules are already
+  captured in `~/.claude/research/tetris-guideline.md`.
+- Back-to-back / guideline B2B multiplier is **not** part of python-tetris's
+  branch, so it is out of scope here (would arrive only with a guideline pass).
+
+**Amendment (2026-09-10) — spin-flag lifetime, made an explicit rule:**
+python-tetris never clears `spin_axis` on a translation, only on spawn. Ported
+literally, that let a T which merely **fell** (automatic gravity) into a blocked
+slot score a free T-spin with no player input — a scoring bug that fires with no
+player action (verified, then regression-tested).
+
+The deliberate rule this port adopts: **automatic descent clears the spin flag;
+player-initiated descent preserves it.** Concretely:
+- **Automatic gravity** (`step()`'s gravity move) **clears** the flag → a piece
+  that merely fell is never a T-spin.
+- **Player hard drop** and **player soft drop** (hold Down) **preserve** the flag
+  → a rotate-then-hard-drop / rotate-then-soft-drop into a blocked slot **does**
+  score a T-spin. This is intentional: those are deliberate player actions
+  immediately following the rotation, and rotate-then-hard-drop is the canonical
+  way a T-spin is executed.
+
+So yes, the same physical descent scores differently by input path — that is the
+intended distinction (skill/intent vs. passive falling), not an oversight. It is
+stricter than python-tetris (which scored the passive-fall case) and is covered by
+tests: gravity-descent → None (regression), and hard-drop-after-spin → scored.
+
+## ADR-0007 — Ship audio (procedural SFX + selectable synthesized music loops) and a post-FX visual layer
+
+**Date:** 2026-09-11 · **Status:** Accepted
+
+**Context.** PRD §8 left "whether to add SFX/music" as an uncommitted Tier-3
+decision, and PRD §2 lists **procedural *music generation*** as a non-goal ("no
+clear user value"). Greg subsequently asked for a pause menu, selectable
+background music, and "more graphics." The game had zero audio and drew flat to
+the backbuffer.
+
+**Decision.**
+1. **Audio is in.** SFX are **synthesized in memory** (no asset files) — see the
+   earlier audio-engine work (`app/synth`, `app/audio`).
+2. **Background music is synthesized *loops*, not a generated score.** Each track
+   (Calm / Classic / Fast) is a fixed, hand-composed note sequence rendered to a
+   PCM loop buffer at startup and streamed via one `AudioStream`. This is
+   authored, deterministic material — **not** the procedural-*generation* PRD §2
+   rejects (no runtime composition/randomisation of a score). It stays asset-free.
+   Selectable + mutable from the pause menu and shown on the start menu. **PRD §2
+   is amended** to scope the non-goal to *generated scores*, explicitly allowing
+   synthesized authored loops.
+3. **Post-processing visual layer.** The scene renders into one
+   `RenderTexture2D` and is blitted through an embedded **bloom** shader
+   (`app/postfx`), enabling neon glow; a **danger vignette** (pulsing red edges,
+   driven by the new `Board::stackHeight()`) and an **animated menu background**
+   layer on top. All app-layer; `core` gained only the plain-data `stackHeight()`
+   accessor (ADR-0001 preserved).
+4. **Pause is a menu** (Resume / Restart / Music / Quit), opened with **Enter** (or
+   P), navigable with arrows; game logic is frozen and music ducks while paused.
+
+**Consequences.** The repo remains **zero-asset** (no `.wav`/`.ogg`/`.ttf`).
+Audio/GL init is guarded so a headless/no-device environment no-ops cleanly (CI
+still builds/tests without a device). The bloom shader is GLSL 330 desktop-only,
+consistent with the existing raylib desktop target.

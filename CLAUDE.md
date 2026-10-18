@@ -5,7 +5,7 @@ planning docs before writing code.
 
 ## Project
 
-**tetris-c** — a **C++17** Tetris for Linux rendered with **raylib**. It is a
+**tetris-c** — a **C++20** Tetris for Linux rendered with **raylib**. It is a
 **feature-parity port of the sibling `../python-tetris`** project. All game rules
 live in a pure-logic `core` with zero rendering/OS dependency; rendering, input,
 and audio live in a thin raylib `app` layer.
@@ -26,28 +26,48 @@ and audio live in a thin raylib `app` layer.
 
 ## Status
 
-**Planning complete + raylib scaffold in place; game code not written.** The
-project is scaffolded from **raylib-quickstart** (premake5 → make, raylib
-vendored). A working `bin/Debug/libraylib.a` is already built. `src/main.c` is
-still the quickstart template — our game code replaces it.
+**Feature-complete (all 3 tiers).** The full python-tetris parity feature set is
+implemented, tested headlessly (94 core test cases / 432 assertions), and the
+game runs at 60 FPS:
+- **Tier 1** — 10×20 board, 7-bag, SRS-like kicks, ghost, next, soft/hard drop,
+  scoring, levels, pause/restart/game-over.
+- **Tier 2** — Marathon/Sprint/Ultra modes + start menu, DAS/ARR + lock delay +
+  SOCD, combo tracking, hard-drop animation.
+- **Tier 3** — T-spin detection (ADR-0006), high-score persistence, juice
+  (screen shake + particles), heuristic AI demo (toggle A).
+
+See `docs/PROGRESS.md` for the per-feature log. Optional remaining polish:
+rebindable keys / a settings screen.
 
 ## Commands
 
-The raylib build (premake5 → make) is real and works. The **test** target and the
-game's own sources do **not exist yet** — those commands are marked planned.
+Both the game build and the tests are real and pass.
 
 ```bash
-# Build raylib + the app (works today; produces bin/Debug/<project>)
+# Build raylib + the game → bin/Debug/tetris-c
 cd build && ./premake5 gmake && cd ..   # regenerate makefiles after premake5.lua edits
 make
 
-# Run (once our code replaces the template main)
+# Run the game
 ./bin/Debug/tetris-c
 
-# (planned) build + run headless core tests — needs the tests target added to
-# build/premake5.lua and tests/ written. Mark verified only after it runs.
-make test
+# Build + run the headless core tests (doctest; NO raylib)
+make -f tests/tests.mk
+
+# Line-coverage report for our own src/ (gcov; NO raylib)
+make -f tests/tests.mk coverage
 ```
+
+> CI runs both on every push/PR to `develop`/`main` (`.github/workflows/ci.yml`):
+> a `test` job (`make -f tests/tests.mk` + coverage, no raylib — this is the PR
+> gate) and a `build` job (premake5 → make, which fetches and compiles raylib and
+> so installs its X11/GL/Wayland deps). There is no coverage *gate* — the report
+> is informational only.
+
+> The core tests use a standalone `tests/tests.mk`, NOT a premake target — the
+> top-level `Makefile` is premake-generated and gitignored, so a hand-added
+> `make test` rule there would be clobbered on the next `premake5 gmake`.
+> `make clean && make` if an incremental build complains about a stale object.
 
 - **No `apt install` for raylib** — Debian 13 does not package raylib; the
   quickstart vendors and builds it (DECISIONS ADR-0003). Don't add `libraylib-dev`
@@ -86,12 +106,16 @@ includes a raylib header.
 
 - Two long-lived branches: **`develop`** (integration/staging) and **`main`**
   (blessed). **No PR ever targets `main` directly** — every feature/fix branch
-  merges into `develop`. Promotion `develop → main` is a separate PR, opened only
-  when Greg says develop is verified, merged as a merge commit / fast-forward
+  merges into `develop`. Promotion `develop → main` is a separate PR (auto-opened
+  by the promote workflow, below), merged as a merge commit / fast-forward
   (never squash), and tagged on main.
+- `.github/workflows/promote.yml` opens and maintains that promotion PR on its
+  own after `CI` passes on a develop push. It calls the shared
+  `ggrace519/.github` workflow at `@v1`. Having the PR open isn't approval:
+  merging it is still Greg's call.
 - Never commit directly to `main` or `develop`; branch from `develop` first
   (`<type>/<kebab-summary>`). Branch and commit freely; **pause and ask before
   pushing or opening a PR.**
-- Remote is **not yet chosen** — GitHub (`ggrace519`) vs `git.skynet.home` (where
-  `python-tetris` lives). Decide at first push. This repo currently has **no
-  remote**.
+- Remote is **`github.com/ggrace519/tetris-c`** (public); GitHub default branch is
+  `develop`. Before any push/PR, confirm the active gh account is `ggrace519`
+  (`gh api user --jq .login`; `gh auth switch` if it's `ggrace-kurv`).
