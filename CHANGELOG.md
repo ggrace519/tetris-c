@@ -7,6 +7,7 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Infrastructure
+- The promotion workflow now pins the shared `promote` workflow to a commit SHA (v1.0.2) instead of the moving `v1` tag, so upstream changes can't silently alter what runs in this repo's CI.
 - A `promote` workflow now opens the single `develop` → `main` promotion pull
   request after CI passes on `develop`, and refreshes its commit and file
   summary on every later develop push. It uses the shared `ggrace519/.github`
