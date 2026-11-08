@@ -6,7 +6,11 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-08
+
 ### Infrastructure
+- **Releases are automated.** Every push to `main` tags `vX.Y.Z` and publishes the GitHub release from the top dated section of this changelog (the shared `ggrace519/.github` release workflow). On the promotion pull request it runs as a dry run, so a promotion whose `[Unreleased]` entries are not rolled into a new version fails before it can merge. This is the first tagged release.
+- The promotion workflow is pinned to `ggrace519/.github` v1.1.0.
 - Dependabot now watches the GitHub Actions workflows weekly, so a new release of the shared `ggrace519/.github` workflows, or of any action, arrives as a pull request against `develop` instead of a hand-edited pin.
 - `promote`: a merge into develop reliably refreshes the develop → main promotion PR again. The merge also re-runs lint on the open promotion PR, and that run's promote job is always skipped. Because both runs shared one concurrency group, the skipped run could cancel the push-triggered run that does the work. Now only push-triggered and manual runs share the group (ggrace519/.github#17).
 - The promotion workflow now pins the shared `promote` workflow to a commit SHA (v1.0.2) instead of the moving `v1` tag, so upstream changes can't silently alter what runs in this repo's CI.
