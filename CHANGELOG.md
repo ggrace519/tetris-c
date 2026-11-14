@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-14
+
 ### Infrastructure
 - **The changelog rolls itself.** After CI passes on `develop`, the promotion workflow rolls `[Unreleased]` into the next version and commits it to `develop` (the shared `ggrace519/.github` `version` workflow, v1.2.0), so the promotion pull request is ready to release when it opens. Nobody writes version headings by hand any more.
 
