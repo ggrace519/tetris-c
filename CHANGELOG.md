@@ -6,6 +6,16 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-22
+
+### Infrastructure
+- **The changelog roll-up is a pull request now.** It used to be a commit pushed straight to `develop`; now, after CI passes on `develop`, a `chore(release): roll changelog into X.Y.Z` pull request opens instead (the shared `ggrace519/.github` workflows, v2.0.0). Merging it is the decision to release, and the promotion pull request opens once it is merged. Both pull requests are opened by a GitHub App, so their checks run without an "Approve and run" click.
+
+## [0.9.1] - 2026-11-14
+
+### Infrastructure
+- **The changelog rolls itself.** After CI passes on `develop`, the promotion workflow rolls `[Unreleased]` into the next version and commits it to `develop` (the shared `ggrace519/.github` `version` workflow, v1.2.0), so the promotion pull request is ready to release when it opens. Nobody writes version headings by hand any more.
+
 ## [0.9.0] - 2026-11-08
 
 ### Infrastructure

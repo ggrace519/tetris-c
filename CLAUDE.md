@@ -113,11 +113,21 @@ includes a raylib header.
   own after `CI` passes on a develop push. It calls the shared
   `ggrace519/.github` workflow, pinned by commit SHA. Having the PR open isn't
   approval: merging it is still Greg's call.
-- Releases: before promoting, roll `[Unreleased]` in `CHANGELOG.md` into a
-  `## [X.Y.Z] - YYYY-MM-DD` section. `.github/workflows/release.yml` (the shared
+- Releases: PRs add entries under `[Unreleased]` in `CHANGELOG.md` only; never
+  write a version heading by hand. Before opening the promotion PR,
+  `promote.yml` runs the shared `version` workflow, which rolls `[Unreleased]`
+  into the next `## [X.Y.Z] - YYYY-MM-DD` section (`### Added` is a minor bump,
+  an entry starting `BREAKING` a major one, anything else a patch) on the
+  workflow-owned `chore/roll-changelog` branch and opens or updates a
+  `chore(release): roll changelog into X.Y.Z` PR into `develop` (never push to
+  that branch). Merging it is the decision to release: the run that merge
+  starts has nothing left to roll and opens the promotion PR. Pull `develop`
+  after a merge before branching again. `.github/workflows/release.yml` (the shared
   `ggrace519/.github` release workflow) tags `vX.Y.Z` and publishes the GitHub
   release from that section when the promotion merges; on the promotion PR it
-  is a dry run that fails while `[Unreleased]` still has entries.
+  is a dry run that fails while `[Unreleased]` still has entries. Both bot PRs
+  are opened as the GitHub App in the `RELEASE_APP_CLIENT_ID` variable and
+  `RELEASE_APP_PRIVATE_KEY` secret, so their checks run on their own.
 - Never commit directly to `main` or `develop`; branch from `develop` first
   (`<type>/<kebab-summary>`). Branch and commit freely; **pause and ask before
   pushing or opening a PR.**
